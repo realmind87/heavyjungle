@@ -32,7 +32,12 @@ export async function getPostsPage(start = 0, limit = POSTS_PAGE_SIZE): Promise<
   }
 
   const posts = (await res.json()) as ApiPost[];
-  return posts.map(withCreatedAt);
+  return posts.map((post) => ({
+    id: post.id,
+    title: post.title,
+    body: post.body,
+    createdAt: new Date(Date.now() - post.id * 86_400_000).toISOString(),
+  }));
 }
 
 export async function getPosts(limit = POSTS_PAGE_SIZE): Promise<Post[]> {

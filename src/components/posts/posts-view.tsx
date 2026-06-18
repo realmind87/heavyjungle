@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { useInfinitePosts } from "@/hooks/use-infinite-posts";
+import { useInfinitePosts, POSTS_MAX_LOADED } from "@/hooks/use-infinite-posts";
 import { formatPostDate, type Post } from "@/lib/posts";
 
 type ViewMode = "list" | "thumbnail";
@@ -129,23 +129,28 @@ export function PostsView({ initialPosts }: { initialPosts: Post[] }) {
   const [view, setView] = useState<ViewMode>("thumbnail");
   const { posts, loadMore, hasMore, isLoading, error } = useInfinitePosts(initialPosts);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const loadMoreRef = useRef(loadMore);
+
+  loadMoreRef.current = loadMore;
 
   useEffect(() => {
+    if (!hasMore || isLoading) return;
+
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0]?.isIntersecting) {
-          loadMore();
+          loadMoreRef.current();
         }
       },
-      { rootMargin: "200px" },
+      { rootMargin: "120px" },
     );
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [loadMore]);
+  }, [hasMore, isLoading, posts.length]);
 
   return (
     <section className="space-y-4">
@@ -175,7 +180,11 @@ export function PostsView({ initialPosts }: { initialPosts: Post[] }) {
         )}
         {error && <p className="text-sm text-red-600">{error}</p>}
         {!hasMore && !isLoading && posts.length > 0 && (
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">모든 게시글을 불러왔습니다.</p>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            {posts.length >= POSTS_MAX_LOADED
+              ? `최대 ${POSTS_MAX_LOADED}개까지 표시됩니다.`
+              : "모든 게시글을 불러왔습니다."}
+          </p>
         )}
       </div>
     </section>
