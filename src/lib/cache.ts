@@ -22,13 +22,21 @@ if (process.env.NODE_ENV !== "production") {
   globalForRedis.redis = redis;
 }
 
+async function ensureRedisConnected(): Promise<void> {
+  if (redis.status === "wait" || redis.status === "end") {
+    await redis.connect();
+  }
+}
+
 export async function cacheGet<T>(key: string): Promise<T | null> {
+  await ensureRedisConnected();
   const raw = await redis.get(key);
   if (!raw) return null;
   return JSON.parse(raw) as T;
 }
 
 export async function cacheSet(key: string, value: unknown, ttlSeconds?: number): Promise<void> {
+  await ensureRedisConnected();
   const env = getEnv();
   const ttl = ttlSeconds ?? env.CACHE_TTL_SECONDS;
   await redis.set(key, JSON.stringify(value), "EX", ttl);
@@ -36,6 +44,7 @@ export async function cacheSet(key: string, value: unknown, ttlSeconds?: number)
 
 export async function cacheDel(...keys: string[]): Promise<void> {
   if (keys.length === 0) return;
+  await ensureRedisConnected();
   await redis.del(...keys);
 }
 
