@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
-import { redis } from "@/lib/cache";
+import { pingRedis } from "@/lib/cache";
 
 export async function GET() {
   const checks = {
@@ -17,8 +17,7 @@ export async function GET() {
   }
 
   try {
-    const pong = await redis.ping();
-    checks.redis = pong === "PONG";
+    checks.redis = await pingRedis();
   } catch {
     checks.redis = false;
   }

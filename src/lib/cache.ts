@@ -28,6 +28,11 @@ async function ensureRedisConnected(): Promise<void> {
   }
 }
 
+export async function pingRedis(): Promise<boolean> {
+  await ensureRedisConnected();
+  return (await redis.ping()) === "PONG";
+}
+
 export async function cacheGet<T>(key: string): Promise<T | null> {
   await ensureRedisConnected();
   const raw = await redis.get(key);
