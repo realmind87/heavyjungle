@@ -104,7 +104,7 @@ npm run dev
 
 ## Synology NAS 배포 (DS918+)
 
-Cloudflare Tunnel로 `https://deploy.heavyjungle.com` 에 서비스합니다.
+Cloudflare Tunnel로 `https://heavyjungle.com` 에 서비스합니다.
 
 ```bash
 mkdir -p /volume1/docker
@@ -120,7 +120,7 @@ docker compose -f docker-compose.nas.yml --profile cloudflare up -d --build
 
 | URL | 설명 |
 |-----|------|
-| https://deploy.heavyjungle.com | 프로덕션 (Cloudflare) |
+| https://heavyjungle.com | 프로덕션 (Cloudflare) |
 | http://NAS_IP:3000 | NAS 내부 테스트 |
 
 ## API
