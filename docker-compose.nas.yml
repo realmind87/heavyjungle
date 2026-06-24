@@ -19,7 +19,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/deploy_and_pray
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/heavyjungle
       REDIS_URL: redis://redis:6379
       DB_POOL_MAX: "10"
       DB_IDLE_TIMEOUT: "20"
@@ -52,12 +52,12 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: deploy_and_pray
+      POSTGRES_DB: heavyjungle
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./src/db/migrations/0000_loving_weapon_omega.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d deploy_and_pray"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d heavyjungle"]
       interval: 10s
       timeout: 5s
       retries: 5

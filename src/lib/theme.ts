@@ -1,6 +1,6 @@
 export type ThemeMode = "light" | "dark";
 
-export const themeStorageKey = "deploy-and-pray-theme";
+export const themeStorageKey = "heavyjungle-theme";
 export const defaultTheme: ThemeMode = "light";
 
 export function resolveTheme(stored: string | null): ThemeMode {

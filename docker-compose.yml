@@ -1,25 +1,25 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: deploy-and-pray-postgres
+    container_name: heavyjungle-postgres
     restart: unless-stopped
     ports:
       - "5432:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: deploy_and_pray
+      POSTGRES_DB: heavyjungle
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d deploy_and_pray"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d heavyjungle"]
       interval: 5s
       timeout: 5s
       retries: 5
 
   redis:
     image: redis:7-alpine
-    container_name: deploy-and-pray-redis
+    container_name: heavyjungle-redis
     restart: unless-stopped
     ports:
       - "6379:6379"

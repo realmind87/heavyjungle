@@ -50,8 +50,8 @@ src/
 ### 1. 저장소 클론 및 의존성 설치
 
 ```bash
-git clone https://github.com/realmind87/deploy-and-pray.git
-cd deploy-and-pray
+git clone https://github.com/realmind87/heavyjungle.git
+cd heavyjungle
 npm install
 ```
 
@@ -109,7 +109,7 @@ Cloudflare Tunnel로 `https://deploy.heavyjungle.com` 에 서비스합니다.
 ```bash
 mkdir -p /volume1/docker
 cd /volume1/docker
-git clone https://github.com/realmind87/deploy-and-pray.git heavyjungle
+git clone https://github.com/realmind87/heavyjungle.git
 cd /volume1/docker/heavyjungle
 
 cp .env.nas.example .env
@@ -164,7 +164,7 @@ Drizzle ORM → PostgreSQL
 
 | 변수 | 설명 | 기본값 |
 |------|------|--------|
-| `DATABASE_URL` | PostgreSQL 연결 URL | `postgresql://postgres:postgres@localhost:5432/deploy_and_pray` |
+| `DATABASE_URL` | PostgreSQL 연결 URL | `postgresql://postgres:postgres@localhost:5432/heavyjungle` |
 | `REDIS_URL` | Redis 연결 URL | `redis://localhost:6379` |
 | `DB_POOL_MAX` | DB 커넥션 풀 최대 크기 | `20` |
 | `CACHE_TTL_SECONDS` | 캐시 TTL (초) | `300` |
