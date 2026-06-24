@@ -8,18 +8,21 @@ export async function GET() {
     postgres: false,
     redis: false,
   };
+  const errors: { postgres?: string; redis?: string } = {};
 
   try {
     await db.execute(sql`select 1`);
     checks.postgres = true;
-  } catch {
+  } catch (error) {
     checks.postgres = false;
+    errors.postgres = error instanceof Error ? error.message : "unknown error";
   }
 
   try {
     checks.redis = await pingRedis();
-  } catch {
+  } catch (error) {
     checks.redis = false;
+    errors.redis = error instanceof Error ? error.message : "unknown error";
   }
 
   const healthy = checks.postgres && checks.redis;
@@ -28,6 +31,7 @@ export async function GET() {
     {
       status: healthy ? "ok" : "degraded",
       checks,
+      ...(healthy ? {} : { errors }),
       timestamp: new Date().toISOString(),
     },
     { status: healthy ? 200 : 503 },
