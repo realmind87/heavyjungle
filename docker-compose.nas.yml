@@ -51,10 +51,11 @@ services:
       - .:/app
     environment:
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/heavyjungle
+      NPM_CONFIG_UPDATE_NOTIFIER: "false"
     depends_on:
       postgres:
         condition: service_healthy
-    command: sh -c "npm ci && npm run db:migrate"
+    command: sh -c "test -x node_modules/.bin/drizzle-kit || npm ci --no-fund --no-audit; npm run db:migrate"
     restart: "no"
 
   # Cloudflare Zero Trust Tunnel (포트포워딩 없이 외부 공개)
@@ -78,7 +79,7 @@ services:
       POSTGRES_DB: heavyjungle
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./src/db/migrations/0000_loving_weapon_omega.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      # 스키마는 ./scripts/nas-migrate.sh (drizzle-kit migrate) 로만 적용합니다.
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d heavyjungle"]
       interval: 10s
