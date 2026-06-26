@@ -26,10 +26,20 @@ services:
       DB_CONNECT_TIMEOUT: "10"
       CACHE_TTL_SECONDS: "300"
       NODE_OPTIONS: "--max-old-space-size=384"
+      S3_ENDPOINT: http://minio:9000
+      S3_REGION: us-east-1
+      S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minioadmin}
+      S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      S3_BUCKET: uploads
+      # 브라우저 presigned PUT + 공개 읽기 — Cloudflare 터널로 minio:9000 노출 필요
+      S3_PUBLIC_URL: ${S3_PUBLIC_URL:-http://localhost:9000/uploads}
+      S3_FORCE_PATH_STYLE: "true"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      minio:
         condition: service_healthy
 
   # Cloudflare Zero Trust Tunnel (포트포워딩 없이 외부 공개)
@@ -73,6 +83,51 @@ services:
       timeout: 5s
       retries: 5
 
+  # MinIO — S3 호환 객체 스토리지 (아바타 업로드)
+  # 콘솔: http://NAS_IP:9001  API: http://NAS_IP:9000
+  # Cloudflare Tunnel로 S3 API(9000)를 외부 노출해야 브라우저 presigned PUT 가능
+  minio:
+    image: minio/minio:latest
+    container_name: heavyjungle-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 버킷 생성 + avatars/ 공개 읽기 + CORS (1회성)
+  minio-init:
+    image: minio/mc:latest
+    container_name: heavyjungle-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    volumes:
+      - ./scripts/minio-cors.json:/tmp/cors.json:ro
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD &&
+      mc mb --ignore-existing local/uploads &&
+      mc anonymous set download local/uploads/avatars &&
+      mc cors set local/uploads /tmp/cors.json &&
+      echo 'MinIO bucket uploads ready'
+      "
+    restart: "no"
+
 volumes:
   postgres_data:
   redis_data:
+  minio_data:

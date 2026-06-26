@@ -8,6 +8,48 @@
       "when": 1781580197740,
       "tag": "0000_loving_weapon_omega",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1782420127128,
+      "tag": "0001_illegal_falcon",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782420332730,
+      "tag": "0002_sudden_adam_destine",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1782421880124,
+      "tag": "0003_board_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1782422500000,
+      "tag": "0004_seed_boards",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1782424000000,
+      "tag": "0006_remove_boards",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1782431219312,
+      "tag": "0007_naive_iron_monger",
+      "breakpoints": true
     }
   ]
 }

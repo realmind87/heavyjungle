@@ -1,26 +1,12 @@
+/**
+ * Redis 캐시 헬퍼 (레거시 items 데모용).
+ * 연결 싱글톤은 @/server/redis 에서 관리합니다.
+ */
 import "server-only";
 
-import Redis from "ioredis";
-import { getEnv } from "@/env";
+import { redis } from "@/server/redis";
 
-const globalForRedis = globalThis as unknown as {
-  redis?: Redis;
-};
-
-function createRedis() {
-  const env = getEnv();
-  return new Redis(env.REDIS_URL, {
-    maxRetriesPerRequest: 3,
-    lazyConnect: true,
-    enableOfflineQueue: false,
-  });
-}
-
-export const redis = globalForRedis.redis ?? createRedis();
-
-if (process.env.NODE_ENV !== "production") {
-  globalForRedis.redis = redis;
-}
+const DEFAULT_CACHE_TTL_SECONDS = 300;
 
 async function ensureRedisConnected(): Promise<void> {
   if (redis.status === "wait" || redis.status === "end") {
@@ -42,8 +28,7 @@ export async function cacheGet<T>(key: string): Promise<T | null> {
 
 export async function cacheSet(key: string, value: unknown, ttlSeconds?: number): Promise<void> {
   await ensureRedisConnected();
-  const env = getEnv();
-  const ttl = ttlSeconds ?? env.CACHE_TTL_SECONDS;
+  const ttl = ttlSeconds ?? DEFAULT_CACHE_TTL_SECONDS;
   await redis.set(key, JSON.stringify(value), "EX", ttl);
 }
 

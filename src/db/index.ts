@@ -1,33 +1,17 @@
+/**
+ * 스키마 바인딩 Drizzle 클라이언트 (레거시 items 데모용).
+ * 연결 싱글톤은 @/server/db 에서 관리합니다.
+ */
 import "server-only";
 
 import type { ExtractTablesWithRelations } from "drizzle-orm";
 import type { PgTransaction } from "drizzle-orm/pg-core";
-import { drizzle, type PostgresJsDatabase, type PostgresJsQueryResultHKT } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
-import { getEnv } from "@/env";
-import * as schema from "./schema";
+import { type PostgresJsDatabase, type PostgresJsQueryResultHKT } from "drizzle-orm/postgres-js";
+import { db } from "@/server/db";
+import * as schema from "@/server/db/schema";
 
-const globalForDb = globalThis as unknown as {
-  sql?: ReturnType<typeof postgres>;
-};
-
-function createSql() {
-  const env = getEnv();
-  return postgres(env.DATABASE_URL, {
-    max: env.DB_POOL_MAX,
-    idle_timeout: env.DB_IDLE_TIMEOUT,
-    connect_timeout: env.DB_CONNECT_TIMEOUT,
-    prepare: true,
-  });
-}
-
-const sql = globalForDb.sql ?? createSql();
-
-if (process.env.NODE_ENV !== "production") {
-  globalForDb.sql = sql;
-}
-
-export const db = drizzle(sql, { schema, logger: process.env.NODE_ENV === "development" });
+export { db };
+export * from "@/server/db/schema";
 
 export type DbClient = PostgresJsDatabase<typeof schema>;
 export type DbTransaction = PgTransaction<
