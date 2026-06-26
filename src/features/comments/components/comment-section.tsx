@@ -6,6 +6,7 @@ import { CommentForm } from "@/features/comments/components/comment-form";
 import { CommentThread, type SerializableCommentThread } from "@/features/comments/components/comment-item";
 import { canModifyComment } from "@/server/auth/permissions";
 import type { User } from "@/server/db/schema/users";
+import { mutedTextClass } from "@/lib/ui-classes";
 
 type CommentSectionProps = {
   postId: string;
@@ -38,20 +39,18 @@ export async function CommentSection({ postId, commentCount, user }: CommentSect
   const serialized = serializeThread(threads, user);
 
   return (
-    <section className="mt-12 border-t border-zinc-200 pt-8 dark:border-zinc-800">
-      <h2 className="text-lg font-semibold">댓글 {commentCount}</h2>
-
+    <section className="mt-10 dark:border-zinc-800">
       {user ? (
-        <div className="mt-6">
+        <div>
           <CommentForm postId={postId} />
         </div>
       ) : (
-        <p className="mt-4 text-sm text-zinc-500">댓글을 작성하려면 로그인하세요.</p>
+        <p className={`mt-4 ${mutedTextClass}`}>댓글을 작성하려면 로그인하세요.</p>
       )}
 
       <div className="mt-6">
         {serialized.length === 0 ? (
-          <p className="text-sm text-zinc-500">아직 댓글이 없습니다.</p>
+          <p className={mutedTextClass}>아직 댓글이 없습니다.</p>
         ) : (
           serialized.map((thread) => (
             <CommentThread key={thread.id} thread={thread} postId={postId} isLoggedIn={!!user} />

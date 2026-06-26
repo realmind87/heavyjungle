@@ -96,6 +96,8 @@ export async function getPostById(id: string) {
       updatedAt: posts.updatedAt,
       authorId: users.id,
       authorUsername: users.username,
+      authorDisplayName: users.displayName,
+      authorAvatarUrl: users.avatarUrl,
     })
     .from(posts)
     .innerJoin(users, eq(posts.authorId, users.id))
@@ -117,6 +119,8 @@ export async function getPostById(id: string) {
     author: {
       id: row.authorId,
       username: row.authorUsername,
+      displayName: row.authorDisplayName,
+      avatarUrl: row.authorAvatarUrl,
     },
   };
 }

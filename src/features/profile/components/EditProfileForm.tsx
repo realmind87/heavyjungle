@@ -8,6 +8,14 @@ import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { AvatarUploader } from "@/features/profile/components/AvatarUploader";
 import { updateProfile, type ProfileActionState } from "@/features/profile/actions";
+import {
+  buttonPrimaryFullClass,
+  errorTextClass,
+  inputClass,
+  labelMediumClass,
+  successTextClass,
+  textareaClass,
+} from "@/lib/ui-classes";
 
 type EditProfileFormProps = {
   username: string;
@@ -41,36 +49,32 @@ export function EditProfileForm({ username, variant, displayName, initial }: Edi
 
       <form action={formAction} className="space-y-4">
         <label className="block">
-          <span className="text-sm font-medium">표시 이름</span>
+          <span className={labelMediumClass}>표시 이름</span>
           <input
             name="displayName"
             defaultValue={initial.displayName}
             maxLength={30}
             placeholder="비워두면 아이디가 표시됩니다"
-            className="mt-1 w-full border px-3 py-2 text-sm"
+            className={`mt-1 ${inputClass}`}
           />
         </label>
 
         <label className="block">
-          <span className="text-sm font-medium">소개</span>
+          <span className={labelMediumClass}>소개</span>
           <textarea
             name="bio"
             defaultValue={initial.bio}
             maxLength={300}
             rows={4}
             placeholder="자기소개를 입력하세요"
-            className="mt-1 w-full border px-3 py-2 text-sm"
+            className={`mt-1 ${textareaClass}`}
           />
         </label>
 
-        {state.error && <p className="text-sm text-red-600">{state.error}</p>}
-        {state.message && !state.error && <p className="text-sm text-green-600">{state.message}</p>}
+        {state.error && <p className={errorTextClass}>{state.error}</p>}
+        {state.message && !state.error && <p className={successTextClass}>{state.message}</p>}
 
-        <button
-          type="submit"
-          disabled={pending}
-          className="w-full border bg-zinc-900 px-4 py-2 text-sm text-white disabled:opacity-50"
-        >
+        <button type="submit" disabled={pending} className={buttonPrimaryFullClass}>
           {pending ? "저장 중..." : "저장"}
         </button>
       </form>

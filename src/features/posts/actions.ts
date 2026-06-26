@@ -1,10 +1,11 @@
 "use server";
 
-import { and, eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getPostById } from "@/features/posts/queries";
 import { createPostFormSchema, updatePostSchema } from "@/features/posts/validators";
+import { isPostHtmlEmpty, sanitizePostHtml } from "@/lib/sanitize-post-html";
 import { canModifyPost, requireUser } from "@/server/auth/permissions";
 import { db } from "@/server/db";
 import { posts } from "@/server/db/schema";
@@ -31,7 +32,12 @@ export async function createPost(
     return { error: parsed.error.issues[0]?.message ?? "입력값을 확인해 주세요." };
   }
 
-  const { title, content } = parsed.data;
+  const { title, content: rawContent } = parsed.data;
+  const content = sanitizePostHtml(rawContent);
+
+  if (isPostHtmlEmpty(content)) {
+    return { error: "내용을 입력하세요." };
+  }
 
   const [post] = await db
     .insert(posts)
@@ -61,7 +67,13 @@ export async function updatePost(
     return { error: parsed.error.issues[0]?.message ?? "입력값을 확인해 주세요." };
   }
 
-  const { postId, title, content } = parsed.data;
+  const { postId, title, content: rawContent } = parsed.data;
+  const content = sanitizePostHtml(rawContent);
+
+  if (isPostHtmlEmpty(content)) {
+    return { error: "내용을 입력하세요." };
+  }
+
   const post = await getPostById(postId);
 
   if (!post || post.isDeleted) {
@@ -109,12 +121,4 @@ export async function deletePost(
 
   revalidatePath("/");
   redirect("/");
-}
-
-/** 상세 페이지 진입 시 조회수 +1 (중복 방지는 다음 단계) */
-export async function incrementViewCount(postId: string): Promise<void> {
-  await db
-    .update(posts)
-    .set({ viewCount: sql`view_count + 1` })
-    .where(and(eq(posts.id, postId), eq(posts.isDeleted, false)));
 }

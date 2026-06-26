@@ -5,6 +5,7 @@ import { PostEditForm } from "@/features/posts/components/post-edit-form";
 import { getPostById } from "@/features/posts/queries";
 import { canModifyPost } from "@/server/auth/permissions";
 import { getCurrentUser } from "@/server/auth/current-user";
+import { linkMutedClass, pageTitleClass } from "@/lib/ui-classes";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -22,10 +23,10 @@ export default async function PostEditPage({ params }: PageProps) {
     <div className="min-h-screen">
       <SiteHeader />
       <main className="mx-auto max-w-3xl px-4 py-8">
-        <Link href={`/posts/${postId}`} className="text-sm text-zinc-500 hover:underline">
+        <Link href={`/posts/${postId}`} className={linkMutedClass}>
           ← 글 보기
         </Link>
-        <h1 className="mt-4 text-2xl font-bold">글 수정</h1>
+        <h1 className={`mt-4 ${pageTitleClass}`}>글 수정</h1>
         <div className="mt-6">
           <PostEditForm postId={postId} initialTitle={post.title} initialContent={post.content} />
         </div>

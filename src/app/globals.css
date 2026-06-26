@@ -21,6 +21,16 @@ body {
 }
 
 @layer base {
+  ::placeholder {
+    color: #a1a1aa;
+  }
+
+  .dark ::placeholder {
+    color: #71717a;
+  }
+}
+
+@layer base {
   a[href],
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),

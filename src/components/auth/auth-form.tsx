@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import type { AuthActionState } from "@/features/auth/actions";
+import { buttonPrimaryFullClass, errorTextClass } from "@/lib/ui-classes";
 
 type AuthFormProps = {
   action: (prevState: AuthActionState, formData: FormData) => Promise<AuthActionState>;
@@ -17,8 +18,8 @@ export function AuthForm({ action, submitLabel, children, next }: AuthFormProps)
     <form action={formAction} className="space-y-4">
       {next && <input type="hidden" name="next" value={next} />}
       {children}
-      {state.error && <p className="text-sm text-red-600">{state.error}</p>}
-      <button type="submit" disabled={pending} className="w-full border bg-zinc-900 px-4 py-2 text-white disabled:opacity-50">
+      {state.error && <p className={errorTextClass}>{state.error}</p>}
+      <button type="submit" disabled={pending} className={buttonPrimaryFullClass}>
         {pending ? "처리 중..." : submitLabel}
       </button>
     </form>

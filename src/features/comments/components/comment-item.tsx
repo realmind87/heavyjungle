@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { createComment, deleteComment, type CommentActionState } from "@/features/comments/actions";
 import { displayCommentContent } from "@/features/comments/display";
 import { formatRelativeTime } from "@/lib/time";
+import { buttonSecondaryClass, errorTextClass, inputClass } from "@/lib/ui-classes";
 
 export type SerializableComment = {
   id: string;
@@ -36,9 +37,9 @@ function ReplyForm({ postId, parentId }: { postId: string; parentId: string }) {
     <form action={formAction} className="mt-2 space-y-2">
       <input type="hidden" name="postId" value={postId} />
       <input type="hidden" name="parentId" value={parentId} />
-      <textarea name="content" required rows={2} className="w-full border px-2 py-1 text-sm" placeholder="답글 작성" />
-      {state.error && <p className="text-xs text-red-600">{state.error}</p>}
-      <button type="submit" disabled={pending} className="border px-2 py-1 text-xs disabled:opacity-50">
+      <textarea name="content" required rows={2} className={inputClass} placeholder="답글 작성" />
+      {state.error && <p className={`text-xs ${errorTextClass}`}>{state.error}</p>}
+      <button type="submit" disabled={pending} className={`${buttonSecondaryClass} text-xs`}>
         {pending ? "등록 중..." : "답글 달기"}
       </button>
     </form>
@@ -51,10 +52,10 @@ function DeleteCommentButton({ commentId }: { commentId: string }) {
   return (
     <form action={formAction} className="inline">
       <input type="hidden" name="commentId" value={commentId} />
-      <button type="submit" disabled={pending} className="text-xs text-red-600 hover:underline disabled:opacity-50">
+      <button type="submit" disabled={pending} className="text-xs text-red-600 hover:underline disabled:opacity-50 dark:text-red-400">
         {pending ? "삭제 중..." : "삭제"}
       </button>
-      {state.error && <span className="ml-2 text-xs text-red-600">{state.error}</span>}
+      {state.error && <span className={`ml-2 text-xs ${errorTextClass}`}>{state.error}</span>}
     </form>
   );
 }
@@ -72,11 +73,13 @@ export function CommentItem({
 
   return (
     <div className={isReply ? "ml-6 mt-3 border-l-2 border-zinc-200 pl-4 dark:border-zinc-700" : "mt-4"}>
-      <div className="rounded border border-zinc-200 p-3 dark:border-zinc-800">
-        <p className="text-xs text-zinc-500">
+      <div className="rounded border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">
           {comment.author.username} · {formatRelativeTime(comment.createdAt)}
         </p>
-        <p className={`mt-1 whitespace-pre-wrap text-sm ${comment.isDeleted ? "text-zinc-400 italic" : ""}`}>
+        <p
+          className={`mt-1 whitespace-pre-wrap text-sm text-zinc-900 dark:text-zinc-100 ${comment.isDeleted ? "italic text-zinc-400 dark:text-zinc-500" : ""}`}
+        >
           {displayCommentContent(comment.content, comment.isDeleted)}
         </p>
         <div className="mt-2 flex items-center gap-3">
@@ -84,7 +87,7 @@ export function CommentItem({
             <button
               type="button"
               onClick={() => setShowReply((v) => !v)}
-              className="text-xs text-blue-600 hover:underline"
+              className="text-xs text-blue-600 hover:underline dark:text-blue-400"
             >
               {showReply ? "답글 취소" : "답글"}
             </button>

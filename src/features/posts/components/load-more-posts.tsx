@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { outlineChipClass } from "@/lib/ui-classes";
 
 type LoadMorePostsProps = {
   nextCursor: string | null;
@@ -12,7 +13,7 @@ export function LoadMorePosts({ nextCursor }: LoadMorePostsProps) {
 
   return (
     <div className="py-6 text-center">
-      <Link href={href} className="inline-block border px-4 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900">
+      <Link href={href} className={outlineChipClass}>
         더 보기
       </Link>
     </div>

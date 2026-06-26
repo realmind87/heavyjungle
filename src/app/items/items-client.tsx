@@ -30,7 +30,7 @@ export function ItemsClient({ initialData }: Props) {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="새 아이템 제목"
-          className="flex-1 rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+          className="flex-1 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
         />
         <button
           type="submit"
@@ -41,22 +41,22 @@ export function ItemsClient({ initialData }: Props) {
         </button>
       </form>
 
-      {isFetching && <p className="text-sm text-zinc-500">로딩 중...</p>}
+      {isFetching && <p className="text-sm text-zinc-500 dark:text-zinc-400">로딩 중...</p>}
 
       <ul className="space-y-3">
         {data.data.map((item) => (
           <li
             key={item.id}
-            className="flex items-center justify-between rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
+            className="flex items-center justify-between rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"
           >
             <div>
-              <p className="font-medium">{item.title}</p>
-              <p className="text-xs text-zinc-500">ID: {item.id}</p>
+              <p className="font-medium text-zinc-900 dark:text-zinc-50">{item.title}</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">ID: {item.id}</p>
             </div>
             <button
               onClick={() => deleteItem.mutate(item.id)}
               disabled={deleteItem.isPending}
-              className="text-sm text-red-600 hover:underline disabled:opacity-50"
+              className="text-sm text-red-600 hover:underline disabled:opacity-50 dark:text-red-400"
             >
               삭제
             </button>
@@ -67,7 +67,7 @@ export function ItemsClient({ initialData }: Props) {
       {data.hasMore && data.nextCursor && (
         <button
           onClick={() => setCursor(data.nextCursor ?? undefined)}
-          className="rounded-lg border border-zinc-300 px-4 py-2 text-sm dark:border-zinc-700"
+          className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
         >
           더 보기
         </button>

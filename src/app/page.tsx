@@ -20,20 +20,6 @@ export default async function HomePage({ searchParams }: PageProps) {
     <div className="min-h-screen">
       <SiteHeader />
       <main className="mx-auto max-w-3xl px-4 py-8">
-        <section>
-          <div className="flex items-center justify-between gap-4">
-            <h2 className="text-lg font-semibold">전체 최신글</h2>
-            {user && (
-              <Link
-                href="/write"
-                className="shrink-0 border px-3 py-1.5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900"
-              >
-                글쓰기
-              </Link>
-            )}
-          </div>
-        </section>
-
         <section className="mt-12">
           <div className="mt-4">
             <PostList posts={postsPage.items} />

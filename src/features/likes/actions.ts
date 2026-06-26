@@ -1,7 +1,6 @@
 "use server";
 
 import { and, eq, sql } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getPostById } from "@/features/posts/queries";
 import { requireUser } from "@/server/auth/permissions";
@@ -68,9 +67,6 @@ export async function toggleLike(postId: string): Promise<ToggleLikeResult> {
         likeCount: updated?.likeCount ?? post.likeCount,
       };
     });
-
-    revalidatePath(`/posts/${postId}`);
-    revalidatePath("/");
 
     return result;
   } catch {

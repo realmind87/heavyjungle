@@ -178,7 +178,7 @@ export function PostsView({ initialPosts }: { initialPosts: Post[] }) {
         {isLoading && (
           <p className="text-sm text-zinc-500 dark:text-zinc-400">게시글 불러오는 중...</p>
         )}
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
         {!hasMore && !isLoading && posts.length > 0 && (
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
             {posts.length >= POSTS_MAX_LOADED

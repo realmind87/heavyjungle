@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { ProfileAvatar } from "@/features/profile/components/ProfileAvatar";
 import { AVATAR_ALLOWED_CONTENT_TYPES, AVATAR_MAX_BYTES } from "@/features/uploads/constants";
 import { confirmAvatarUpload, createAvatarUploadUrl } from "@/features/uploads/actions";
+import { buttonSecondaryClass, errorTextClass, mutedTextClass } from "@/lib/ui-classes";
 
 type AvatarUploaderProps = {
   displayName: string;
@@ -92,7 +93,7 @@ export function AvatarUploader({ displayName, initialPublicUrl }: AvatarUploader
             type="button"
             disabled={busy}
             onClick={() => inputRef.current?.click()}
-            className="border px-3 py-1.5 text-sm hover:bg-zinc-50 disabled:opacity-50 dark:hover:bg-zinc-900"
+            className={buttonSecondaryClass}
           >
             {busy ? (status === "uploading" ? "업로드 중..." : "확인 중...") : "이미지 선택"}
           </button>
@@ -103,10 +104,10 @@ export function AvatarUploader({ displayName, initialPublicUrl }: AvatarUploader
             className="hidden"
             onChange={handleFileChange}
           />
-          <p className="mt-1 text-xs text-zinc-500">JPEG, PNG, WebP · 최대 5MB</p>
+          <p className={`mt-1 text-xs ${mutedTextClass}`}>JPEG, PNG, WebP · 최대 5MB</p>
         </div>
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className={errorTextClass}>{error}</p>}
     </div>
   );
 }

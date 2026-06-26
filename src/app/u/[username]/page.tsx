@@ -7,6 +7,7 @@ import { UserPostsLoadMore } from "@/features/profile/components/UserPostsLoadMo
 import { getPublicProfileByUsername, getUserPosts } from "@/features/profile/queries";
 import { getCurrentUser } from "@/server/auth/current-user";
 import { resolveAvatarPublicUrl } from "@/lib/storage-url";
+import { mutedTextClass, pageTitleClass, sectionTitleClass } from "@/lib/ui-classes";
 
 type PageProps = {
   params: Promise<{ username: string }>;
@@ -40,14 +41,14 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
             size="lg"
           />
           <div className="min-w-0 flex-1">
-            <h1 className="text-2xl font-bold">{displayName}</h1>
-            <p className="text-sm text-zinc-500">@{profile.username}</p>
+            <h1 className={pageTitleClass}>{displayName}</h1>
+            <p className={mutedTextClass}>@{profile.username}</p>
             {profile.bio && (
               <p className="mt-3 whitespace-pre-wrap text-sm text-zinc-700 dark:text-zinc-300">
                 {profile.bio}
               </p>
             )}
-            <div className="mt-3 flex flex-wrap gap-4 text-sm text-zinc-500">
+            <div className={`mt-3 flex flex-wrap gap-4 ${mutedTextClass}`}>
               <span>글 {profile.stats.postCount}</span>
               <span>받은 좋아요 {profile.stats.likesReceived}</span>
               <span>
@@ -69,7 +70,7 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
         </div>
 
         <section className="mt-12">
-          <h2 className="text-lg font-semibold">작성 글</h2>
+          <h2 className={sectionTitleClass}>작성 글</h2>
           <div className="mt-4">
             <PostList posts={postsPage.items} />
             <UserPostsLoadMore username={profile.username} nextCursor={postsPage.nextCursor} />

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { outlineChipClass } from "@/lib/ui-classes";
 
 type ProfileActionLinksProps = {
   username: string;
@@ -9,24 +10,15 @@ type ProfileActionLinksProps = {
 export function ProfileActionLinks({ username, hasPassword }: ProfileActionLinksProps) {
   return (
     <div className="flex flex-wrap gap-2">
-      <Link
-        href={`/u/${username}/edit`}
-        className="border px-3 py-1.5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900"
-      >
+      <Link href={`/u/${username}/edit`} className={outlineChipClass}>
         프로필 수정
       </Link>
       {hasPassword && (
         <>
-          <Link
-            href={`/u/${username}/settings/password`}
-            className="border px-3 py-1.5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900"
-          >
+          <Link href={`/u/${username}/settings/password`} className={outlineChipClass}>
             비밀번호 변경
           </Link>
-          <Link
-            href={`/u/${username}/settings/email`}
-            className="border px-3 py-1.5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900"
-          >
+          <Link href={`/u/${username}/settings/email`} className={outlineChipClass}>
             이메일 변경
           </Link>
         </>

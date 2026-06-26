@@ -4,6 +4,14 @@
 import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { changeEmail, type ProfileActionState } from "@/features/profile/actions";
+import {
+  buttonPrimaryFullClass,
+  errorTextClass,
+  inputClass,
+  labelMediumClass,
+  mutedTextClass,
+  successTextClass,
+} from "@/lib/ui-classes";
 
 type ChangeEmailFormProps = {
   username: string;
@@ -28,40 +36,36 @@ export function ChangeEmailForm({ username, variant, currentEmail }: ChangeEmail
 
   return (
     <form action={formAction} className="space-y-4">
-      <p className="text-sm text-zinc-500">
+      <p className={mutedTextClass}>
         현재 이메일: <span className="font-medium text-zinc-700 dark:text-zinc-300">{currentEmail}</span>
       </p>
 
       <label className="block">
-        <span className="text-sm font-medium">새 이메일</span>
+        <span className={labelMediumClass}>새 이메일</span>
         <input
           name="newEmail"
           type="email"
           autoComplete="email"
           required
-          className="mt-1 w-full border px-3 py-2 text-sm"
+          className={`mt-1 ${inputClass}`}
         />
       </label>
 
       <label className="block">
-        <span className="text-sm font-medium">현재 비밀번호</span>
+        <span className={labelMediumClass}>현재 비밀번호</span>
         <input
           name="currentPassword"
           type="password"
           autoComplete="current-password"
           required
-          className="mt-1 w-full border px-3 py-2 text-sm"
+          className={`mt-1 ${inputClass}`}
         />
       </label>
 
-      {state.error && <p className="text-sm text-red-600">{state.error}</p>}
-      {state.message && !state.error && <p className="text-sm text-green-600">{state.message}</p>}
+      {state.error && <p className={errorTextClass}>{state.error}</p>}
+      {state.message && !state.error && <p className={successTextClass}>{state.message}</p>}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="w-full border bg-zinc-900 px-4 py-2 text-sm text-white disabled:opacity-50"
-      >
+      <button type="submit" disabled={pending} className={buttonPrimaryFullClass}>
         {pending ? "변경 중..." : "이메일 변경"}
       </button>
     </form>

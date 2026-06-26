@@ -81,14 +81,12 @@ function ProfileMenu({ username }: { username: string }) {
                 aria-checked={isDark}
                 aria-label="다크 모드 토글"
                 onClick={() => selectTheme(isDark ? "light" : "dark")}
-                className={`relative h-7 w-12 shrink-0 rounded-full ${
-                  isDark ? "bg-zinc-700" : "bg-zinc-300"
-                }`}
+                className={`relative h-7 w-12 shrink-0 rounded-full ${isDark ? "bg-zinc-700" : "bg-zinc-300"
+                  }`}
               >
                 <span
-                  className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform duration-200 ${
-                    isDark ? "translate-x-5" : "translate-x-0"
-                  }`}
+                  className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform duration-200 ${isDark ? "translate-x-5" : "translate-x-0"
+                    }`}
                 />
               </button>
             </div>
@@ -173,7 +171,7 @@ export function Header({ user }: HeaderProps) {
             배포는기도다
           </Link>
 
-          <div className="flex items-center gap-1 sm:gap-2">
+          <div className="flex items-center gap-5 sm:gap-2">
             <AuthButtons
               className="hidden md:flex"
               user={user}
@@ -204,7 +202,23 @@ export function Header({ user }: HeaderProps) {
                 )}
               </svg>
             </button>
-
+            {user && (
+              <Link
+                href="/write"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-500 px-2 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="h-4 w-4 shrink-0"
+                  aria-hidden="true"
+                >
+                  <path strokeLinecap="round" d="M12 5v14M5 12h14" />
+                </svg>
+              </Link>
+            )}
             {user && <ProfileMenu username={user.username} />}
           </div>
         </div>

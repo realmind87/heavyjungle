@@ -11,7 +11,7 @@ export function PostCard({ post }: PostCardProps) {
   return (
     <article className="border-b border-zinc-200 py-4 dark:border-zinc-800">
       <div className="min-w-0 pl-2 pr-2">
-        <span className="text-xs">{post.author.username}</span>
+        <span className="text-xs text-zinc-500 dark:text-zinc-400">{post.author.username}</span>
         
         <div className="flex justify-between gap-1">
           <Link
@@ -20,10 +20,10 @@ export function PostCard({ post }: PostCardProps) {
           >
             {post.title}
           </Link>
-          <span className="font-medium">{post.commentCount}</span>
+          <span className="font-medium text-zinc-700 dark:text-zinc-300">{post.commentCount}</span>
         </div>
 
-        <p className="mt-2 text-xs text-zinc-500">
+        <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
           <time dateTime={post.createdAt.toISOString()}>{formatRelativeTime(post.createdAt)}</time>
           <span className="mx-1">·</span>
           <span>조회 {post.viewCount}</span>

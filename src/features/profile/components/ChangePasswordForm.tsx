@@ -4,6 +4,13 @@
 import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { changePassword, type ProfileActionState } from "@/features/profile/actions";
+import {
+  buttonPrimaryFullClass,
+  errorTextClass,
+  inputClass,
+  labelMediumClass,
+  successTextClass,
+} from "@/lib/ui-classes";
 
 type ChangePasswordFormProps = {
   username: string;
@@ -28,50 +35,44 @@ export function ChangePasswordForm({ username, variant }: ChangePasswordFormProp
   return (
     <form action={formAction} className="space-y-4">
       <label className="block">
-        <span className="text-sm font-medium">현재 비밀번호</span>
+        <span className={labelMediumClass}>현재 비밀번호</span>
         <input
           name="currentPassword"
           type="password"
           autoComplete="current-password"
           required
-          className="mt-1 w-full border px-3 py-2 text-sm"
+          className={`mt-1 ${inputClass}`}
         />
       </label>
 
       <label className="block">
-        <span className="text-sm font-medium">새 비밀번호</span>
+        <span className={labelMediumClass}>새 비밀번호</span>
         <input
           name="newPassword"
           type="password"
           autoComplete="new-password"
           required
           minLength={8}
-          className="mt-1 w-full border px-3 py-2 text-sm"
+          className={`mt-1 ${inputClass}`}
         />
       </label>
 
       <label className="block">
-        <span className="text-sm font-medium">새 비밀번호 확인</span>
+        <span className={labelMediumClass}>새 비밀번호 확인</span>
         <input
           name="confirmPassword"
           type="password"
           autoComplete="new-password"
           required
           minLength={8}
-          className="mt-1 w-full border px-3 py-2 text-sm"
+          className={`mt-1 ${inputClass}`}
         />
       </label>
 
-      {state.error && <p className="text-sm text-red-600">{state.error}</p>}
-      {state.success && state.message && (
-        <p className="text-sm text-green-600">{state.message}</p>
-      )}
+      {state.error && <p className={errorTextClass}>{state.error}</p>}
+      {state.success && state.message && <p className={successTextClass}>{state.message}</p>}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="w-full border bg-zinc-900 px-4 py-2 text-sm text-white disabled:opacity-50"
-      >
+      <button type="submit" disabled={pending} className={buttonPrimaryFullClass}>
         {pending ? "변경 중..." : "비밀번호 변경"}
       </button>
     </form>

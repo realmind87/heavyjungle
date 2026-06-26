@@ -2,10 +2,11 @@
 type ProfileAvatarProps = {
   name: string;
   avatarUrl?: string | null;
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
 };
 
 const sizeClasses = {
+  xs: "h-6 w-6 text-[10px]",
   sm: "h-10 w-10 text-sm",
   md: "h-16 w-16 text-xl",
   lg: "h-24 w-24 text-3xl",
