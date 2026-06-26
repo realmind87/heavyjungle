@@ -42,4 +42,11 @@ DELETE FROM drizzle.__drizzle_migrations
 WHERE hash <> '${MIGRATION_0000_HASH}';
 EOSQL
 
-echo "==> Repair done. Run: ./scripts/nas-migrate.sh"
+if sudo docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" heavyjungle-postgres \
+  psql -U postgres -d heavyjungle -tAc "SELECT to_regclass('public.users') IS NOT NULL" \
+  | grep -q true; then
+  echo "==> repair failed: public.users still exists" >&2
+  exit 1
+fi
+
+echo "==> Repair done (users dropped, drizzle journal 0000 only). Run: ./scripts/nas-migrate.sh"
