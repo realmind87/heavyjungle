@@ -13,6 +13,13 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Build-time placeholders for Next.js static analysis (runtime values come from compose)
 ENV DATABASE_URL=postgresql://postgres:postgres@postgres:5432/heavyjungle
 ENV REDIS_URL=redis://redis:6379
+ENV S3_ENDPOINT=http://minio:9000
+ENV S3_REGION=us-east-1
+ENV S3_ACCESS_KEY_ID=build-placeholder
+ENV S3_SECRET_ACCESS_KEY=build-placeholder
+ENV S3_BUCKET=uploads
+ENV S3_PUBLIC_URL=http://localhost:9000/uploads
+ENV S3_FORCE_PATH_STYLE=true
 RUN npm run build
 
 FROM base AS runner
