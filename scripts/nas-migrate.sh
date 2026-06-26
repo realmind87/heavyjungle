@@ -23,7 +23,8 @@ fi
 POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-postgres}"
 
 psql_as_postgres() {
-  sudo docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" heavyjungle-postgres \
+  # -i 필수: heredoc SQL이 psql stdin 으로 전달되도록
+  sudo docker exec -i -e PGPASSWORD="$POSTGRES_PASSWORD" heavyjungle-postgres \
     psql -v ON_ERROR_STOP=1 -U postgres -d heavyjungle "$@"
 }
 
@@ -53,18 +54,28 @@ sudo docker compose -f "$COMPOSE_FILE" stop app 2>/dev/null || true
 
 echo ""
 echo "==> Running Drizzle migrations (첫 실행은 npm ci 때문에 5~10분 걸릴 수 있음)"
+MIGRATE_LOG="/tmp/heavyjungle-migrate-$$.log"
 set +e
-sudo docker compose -f "$COMPOSE_FILE" --profile migrate run --rm -T migrate
+sudo docker compose -f "$COMPOSE_FILE" --profile migrate run --rm -T migrate 2>&1 | tee "$MIGRATE_LOG"
 migrate_status=$?
 set -e
 
 echo ""
 if [ "$migrate_status" -ne 0 ]; then
   echo "==> drizzle-kit migrate failed (exit $migrate_status)" >&2
-  echo "   부분 적용 상태면: ./scripts/nas-migrate-repair.sh 후 다시 실행" >&2
+  echo "==> Last 40 lines of migrate output:" >&2
+  tail -40 "$MIGRATE_LOG" >&2 || true
+  echo "" >&2
+  migration_count="$(psql_as_postgres -tAc "SELECT count(*) FROM drizzle.__drizzle_migrations;" 2>/dev/null || echo "?")"
+  echo "==> drizzle.__drizzle_migrations count: $migration_count (expected $EXPECTED_MIGRATIONS)" >&2
+  psql_as_postgres -c "\dt public.*" 2>/dev/null || true
+  echo "" >&2
+  echo "   부분 적용 상태면: ./scripts/nas-migrate-repair.sh 후 ./scripts/nas-migrate.sh" >&2
+  rm -f "$MIGRATE_LOG"
   sudo docker compose -f "$COMPOSE_FILE" start app 2>/dev/null || true
   exit "$migrate_status"
 fi
+rm -f "$MIGRATE_LOG"
 
 echo "==> drizzle-kit migrate finished (exit 0)"
 

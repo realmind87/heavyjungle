@@ -26,7 +26,7 @@ sleep 3
 
 sudo docker compose -f "$COMPOSE_FILE" stop app 2>/dev/null || true
 
-sudo docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" heavyjungle-postgres \
+sudo docker exec -i -e PGPASSWORD="$POSTGRES_PASSWORD" heavyjungle-postgres \
   psql -v ON_ERROR_STOP=1 -U postgres -d heavyjungle <<EOSQL
 DROP TABLE IF EXISTS "likes" CASCADE;
 DROP TABLE IF EXISTS "votes" CASCADE;

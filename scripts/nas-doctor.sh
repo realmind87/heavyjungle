@@ -38,7 +38,7 @@ POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-postgres}"
 
 echo ""
 echo "==> Postgres 연결 (컨테이너 내부)"
-if sudo docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" heavyjungle-postgres \
+if sudo docker exec -i -e PGPASSWORD="$POSTGRES_PASSWORD" heavyjungle-postgres \
   psql -U postgres -d heavyjungle -c "SELECT 1;" >/dev/null 2>&1; then
   ok "postgres 비밀번호 일치"
 else
