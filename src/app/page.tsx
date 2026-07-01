@@ -20,7 +20,7 @@ export default async function HomePage({ searchParams }: PageProps) {
     <div className="min-h-screen">
       <SiteHeader />
       <main className="mx-auto max-w-3xl px-4 py-8">
-        <section className="mt-12">
+        <section>
           <div className="mt-4">
             <PostList posts={postsPage.items} />
             <LoadMorePosts nextCursor={postsPage.nextCursor} />

@@ -13,8 +13,7 @@ export const comments = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "restrict" }),
     /**
-     * null이면 최상위 댓글, 값이 있으면 해당 댓글의 대댓글.
-     * 앱 로직상 1단계 대댓글까지만 허용(대댓글에 또 대댓글 불가).
+     * null이면 최상위 댓글, 값이 있으면 해당 댓글의 답글 (무한 중첩).
      */
     parentId: uuid("parent_id").references((): AnyPgColumn => comments.id, { onDelete: "cascade" }),
     content: text("content").notNull(),

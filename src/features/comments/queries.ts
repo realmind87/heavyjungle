@@ -1,6 +1,6 @@
 /**
  * 댓글 조회 쿼리.
- * 평면 조회 후 1단계 부모-자식 구조로 묶음 (대대댓글 없음).
+ * 평면 조회 후 parentId 기준 재귀 트리로 묶음.
  */
 import "server-only";
 
@@ -18,12 +18,17 @@ export type CommentFlat = {
   author: {
     id: string;
     username: string;
+    displayName: string | null;
+    avatarUrl: string | null;
   };
 };
 
-export type CommentWithReplies = CommentFlat & {
-  replies: CommentFlat[];
+export type CommentNode = CommentFlat & {
+  replies: CommentNode[];
 };
+
+/** @deprecated CommentNode 사용 */
+export type CommentWithReplies = CommentNode;
 
 export async function getCommentsByPost(postId: string): Promise<CommentFlat[]> {
   const rows = await db
@@ -36,6 +41,8 @@ export async function getCommentsByPost(postId: string): Promise<CommentFlat[]> 
       createdAt: comments.createdAt,
       authorId: users.id,
       authorUsername: users.username,
+      authorDisplayName: users.displayName,
+      authorAvatarUrl: users.avatarUrl,
     })
     .from(comments)
     .innerJoin(users, eq(comments.authorId, users.id))
@@ -49,36 +56,46 @@ export async function getCommentsByPost(postId: string): Promise<CommentFlat[]> 
     content: row.content,
     isDeleted: row.isDeleted,
     createdAt: row.createdAt,
-    author: { id: row.authorId, username: row.authorUsername },
+    author: {
+      id: row.authorId,
+      username: row.authorUsername,
+      displayName: row.authorDisplayName,
+      avatarUrl: row.authorAvatarUrl,
+    },
   }));
 }
 
-/** 최상위 댓글 + 1단계 대댓글 트리 */
-export function buildCommentThreads(flat: CommentFlat[]): CommentWithReplies[] {
-  const topLevel: CommentWithReplies[] = [];
-  const repliesByParent = new Map<string, CommentFlat[]>();
+/** 평면 댓글 목록 → 무한 깊이 트리 */
+export function buildCommentTree(flat: CommentFlat[]): CommentNode[] {
+  const byParent = new Map<string | null, CommentFlat[]>();
 
   for (const comment of flat) {
-    if (comment.parentId) {
-      const list = repliesByParent.get(comment.parentId) ?? [];
-      list.push(comment);
-      repliesByParent.set(comment.parentId, list);
-    }
+    const siblings = byParent.get(comment.parentId) ?? [];
+    siblings.push(comment);
+    byParent.set(comment.parentId, siblings);
   }
 
-  for (const comment of flat) {
-    if (!comment.parentId) {
-      topLevel.push({
-        ...comment,
-        replies: repliesByParent.get(comment.id) ?? [],
-      });
-    }
+  function buildChildren(parentId: string | null): CommentNode[] {
+    return (byParent.get(parentId) ?? []).map((comment) => ({
+      ...comment,
+      replies: buildChildren(comment.id),
+    }));
   }
 
-  return topLevel;
+  return buildChildren(null);
 }
 
-export async function getCommentThreadsByPost(postId: string): Promise<CommentWithReplies[]> {
+/** @deprecated buildCommentTree 사용 */
+export function buildCommentThreads(flat: CommentFlat[]): CommentNode[] {
+  return buildCommentTree(flat);
+}
+
+export async function getCommentTreeByPost(postId: string): Promise<CommentNode[]> {
   const flat = await getCommentsByPost(postId);
-  return buildCommentThreads(flat);
+  return buildCommentTree(flat);
+}
+
+/** @deprecated getCommentTreeByPost 사용 */
+export async function getCommentThreadsByPost(postId: string): Promise<CommentNode[]> {
+  return getCommentTreeByPost(postId);
 }

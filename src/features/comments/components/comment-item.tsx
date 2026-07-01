@@ -1,10 +1,15 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { createComment, deleteComment, type CommentActionState } from "@/features/comments/actions";
+import { deleteComment, type CommentActionState } from "@/features/comments/actions";
+import { CommentComposer } from "@/features/comments/components/comment-composer";
+import { CommentContent } from "@/features/comments/components/comment-content";
 import { displayCommentContent } from "@/features/comments/display";
 import { formatRelativeTime } from "@/lib/time";
-import { buttonSecondaryClass, errorTextClass, inputClass } from "@/lib/ui-classes";
+import { errorTextClass } from "@/lib/ui-classes";
+import { ProfileAvatar } from "@/features/profile/components/ProfileAvatar";
+
+const MAX_VISUAL_DEPTH = 8;
 
 export type SerializableComment = {
   id: string;
@@ -13,36 +18,47 @@ export type SerializableComment = {
   content: string;
   isDeleted: boolean;
   createdAt: string;
-  author: { id: string; username: string };
+  author: {
+    id: string;
+    username: string;
+    displayName: string | null;
+    avatarPublicUrl: string | null;
+  };
   canDelete: boolean;
 };
 
-export type SerializableCommentThread = SerializableComment & {
-  replies: SerializableComment[];
+export type SerializableCommentNode = SerializableComment & {
+  replies: SerializableCommentNode[];
 };
 
-type CommentItemProps = {
-  comment: SerializableComment;
-  postId: string;
-  isLoggedIn: boolean;
-  canDelete: boolean;
-  isReply?: boolean;
-  showReplyButton?: boolean;
-};
+/** @deprecated SerializableCommentNode 사용 */
+export type SerializableCommentThread = SerializableCommentNode;
 
-function ReplyForm({ postId, parentId }: { postId: string; parentId: string }) {
-  const [state, formAction, pending] = useActionState(createComment, {} as CommentActionState);
-
+function CommentIcon() {
   return (
-    <form action={formAction} className="mt-2 space-y-2">
-      <input type="hidden" name="postId" value={postId} />
-      <input type="hidden" name="parentId" value={parentId} />
-      <textarea name="content" required rows={2} className={inputClass} placeholder="답글 작성" />
-      {state.error && <p className={`text-xs ${errorTextClass}`}>{state.error}</p>}
-      <button type="submit" disabled={pending} className={`${buttonSecondaryClass} text-xs`}>
-        {pending ? "등록 중..." : "답글 달기"}
-      </button>
-    </form>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </svg>
+  );
+}
+
+type ReplyFormProps = {
+  postId: string;
+  parentId: string;
+  onCancel: () => void;
+};
+
+function ReplyForm({ postId, parentId, onCancel }: ReplyFormProps) {
+  return (
+    <CommentComposer
+      postId={postId}
+      parentId={parentId}
+      placeholder="답글 작성"
+      submitLabel="답글 달기"
+      onCancel={onCancel}
+      autoFocus
+      compact
+    />
   );
 }
 
@@ -52,7 +68,11 @@ function DeleteCommentButton({ commentId }: { commentId: string }) {
   return (
     <form action={formAction} className="inline">
       <input type="hidden" name="commentId" value={commentId} />
-      <button type="submit" disabled={pending} className="text-xs text-red-600 hover:underline disabled:opacity-50 dark:text-red-400">
+      <button
+        type="submit"
+        disabled={pending}
+        className="text-xs text-red-600 hover:underline disabled:opacity-50 dark:text-red-400"
+      >
         {pending ? "삭제 중..." : "삭제"}
       </button>
       {state.error && <span className={`ml-2 text-xs ${errorTextClass}`}>{state.error}</span>}
@@ -60,75 +80,94 @@ function DeleteCommentButton({ commentId }: { commentId: string }) {
   );
 }
 
-/** 단일 댓글 — 삭제 표시, 답글 토글, 삭제 버튼 */
-export function CommentItem({
-  comment,
-  postId,
-  isLoggedIn,
-  canDelete,
-  isReply = false,
-  showReplyButton = false,
-}: CommentItemProps) {
+type CommentNodeProps = {
+  comment: SerializableCommentNode;
+  postId: string;
+  isLoggedIn: boolean;
+  depth?: number;
+};
+
+/** 단일 댓글 노드 — Reddit 스타일 들여쓰기·세로선, 재귀 답글 */
+export function CommentNode({ comment, postId, isLoggedIn, depth = 0 }: CommentNodeProps) {
   const [showReply, setShowReply] = useState(false);
+  const isNested = depth > 0;
 
   return (
-    <div className={isReply ? "ml-6 mt-3 border-l-2 border-zinc-200 pl-4 dark:border-zinc-700" : "mt-4"}>
-      <div className="rounded border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">
-          {comment.author.username} · {formatRelativeTime(comment.createdAt)}
-        </p>
-        <p
-          className={`mt-1 whitespace-pre-wrap text-sm text-zinc-900 dark:text-zinc-100 ${comment.isDeleted ? "italic text-zinc-400 dark:text-zinc-500" : ""}`}
-        >
-          {displayCommentContent(comment.content, comment.isDeleted)}
-        </p>
-        <div className="mt-2 flex items-center gap-3">
-          {isLoggedIn && showReplyButton && !comment.isDeleted && (
+    <div
+      className={isNested ? "mt-2" : "mt-4"}
+    >
+      <article className="rounded-lg bg-white p-3 dark:bg-zinc-900">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+            <ProfileAvatar
+              name={comment.author.displayName ?? comment.author.username}
+              avatarUrl={comment.author.avatarPublicUrl}
+              size="xs"
+            />
+            <span className="truncate">
+              {comment.author.username} · {formatRelativeTime(comment.createdAt)}
+            </span>
+          </div>
+
+          {isNested && isLoggedIn && !comment.isDeleted && (
             <button
               type="button"
-              onClick={() => setShowReply((v) => !v)}
-              className="text-xs text-blue-600 hover:underline dark:text-blue-400"
+              onClick={() => setShowReply((open) => !open)}
+              aria-label={showReply ? "답글 취소" : "답글"}
+              className={`inline-flex shrink-0 items-center justify-center p-1 transition ${showReply ? "text-blue-600 dark:text-blue-400" : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                }`}
             >
-              {showReply ? "답글 취소" : "답글"}
+              <CommentIcon />
             </button>
           )}
-          {canDelete && !comment.isDeleted && <DeleteCommentButton commentId={comment.id} />}
         </div>
-        {showReply && <ReplyForm postId={postId} parentId={comment.id} />}
-      </div>
+
+        <CommentContent
+          content={displayCommentContent(comment.content, comment.isDeleted)}
+          isDeleted={comment.isDeleted}
+          className={`mt-2 pl-8 ${comment.isDeleted ? "italic text-zinc-400 dark:text-zinc-500" : ""}`}
+        />
+
+        <div className="mt-2 flex items-center gap-3 pl-8">
+          {!isNested && isLoggedIn && !comment.isDeleted && (
+            <button
+              type="button"
+              onClick={() => setShowReply((open) => !open)}
+              className="text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+            >
+              {showReply ? "취소" : "답글"}
+            </button>
+          )}
+          {comment.canDelete && !comment.isDeleted && <DeleteCommentButton commentId={comment.id} />}
+        </div>
+
+        {showReply && (
+          <div className="pl-8">
+            <ReplyForm postId={postId} parentId={comment.id} onCancel={() => setShowReply(false)} />
+          </div>
+        )}
+      </article>
+
+      {comment.replies.length > 0 && (
+        <div className="ml-8 border-l-2 border-zinc-200 dark:border-zinc-700">
+          {comment.replies.map((reply) => (
+            <CommentNode key={reply.id} comment={reply} postId={postId} isLoggedIn={isLoggedIn} depth={depth + 1} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-/** 댓글 + 1단계 대댓글 스레드 */
+/** 최상위 댓글 목록 */
 export function CommentThread({
   thread,
   postId,
   isLoggedIn,
 }: {
-  thread: SerializableCommentThread;
+  thread: SerializableCommentNode;
   postId: string;
   isLoggedIn: boolean;
 }) {
-  return (
-    <div>
-      <CommentItem
-        comment={thread}
-        postId={postId}
-        isLoggedIn={isLoggedIn}
-        canDelete={thread.canDelete}
-        showReplyButton
-      />
-      {thread.replies.map((reply) => (
-        <CommentItem
-          key={reply.id}
-          comment={reply}
-          postId={postId}
-          isLoggedIn={isLoggedIn}
-          canDelete={reply.canDelete}
-          isReply
-        />
-      ))}
-    </div>
-  );
+  return <CommentNode comment={thread} postId={postId} isLoggedIn={isLoggedIn} depth={0} />;
 }

@@ -1,12 +1,13 @@
 /**
  * 글 상세 댓글 영역 — 서버에서 스레드 조회 후 클라이언트에 직렬화 데이터 전달.
  */
-import { getCommentThreadsByPost, type CommentFlat, type CommentWithReplies } from "@/features/comments/queries";
+import { getCommentTreeByPost, type CommentFlat, type CommentNode } from "@/features/comments/queries";
 import { CommentForm } from "@/features/comments/components/comment-form";
-import { CommentThread, type SerializableCommentThread } from "@/features/comments/components/comment-item";
+import { CommentThread, type SerializableCommentNode } from "@/features/comments/components/comment-item";
 import { canModifyComment } from "@/server/auth/permissions";
 import type { User } from "@/server/db/schema/users";
 import { mutedTextClass } from "@/lib/ui-classes";
+import { resolveAvatarPublicUrl } from "@/lib/storage-url";
 
 type CommentSectionProps = {
   postId: string;
@@ -14,7 +15,7 @@ type CommentSectionProps = {
   user: User | null;
 };
 
-function serializeComment(comment: CommentFlat, user: User | null) {
+function serializeComment(comment: CommentFlat, user: User | null): SerializableCommentNode {
   return {
     id: comment.id,
     postId: comment.postId,
@@ -22,21 +23,27 @@ function serializeComment(comment: CommentFlat, user: User | null) {
     content: comment.content,
     isDeleted: comment.isDeleted,
     createdAt: comment.createdAt.toISOString(),
-    author: comment.author,
+    author: {
+      id: comment.author.id,
+      username: comment.author.username,
+      displayName: comment.author.displayName,
+      avatarPublicUrl: resolveAvatarPublicUrl(comment.author.avatarUrl),
+    },
     canDelete: canModifyComment(user, comment.author.id),
+    replies: [],
   };
 }
 
-function serializeThread(threads: CommentWithReplies[], user: User | null): SerializableCommentThread[] {
-  return threads.map((thread) => ({
-    ...serializeComment(thread, user),
-    replies: thread.replies.map((reply) => serializeComment(reply, user)),
+function serializeTree(nodes: CommentNode[], user: User | null): SerializableCommentNode[] {
+  return nodes.map((node) => ({
+    ...serializeComment(node, user),
+    replies: serializeTree(node.replies, user),
   }));
 }
 
 export async function CommentSection({ postId, commentCount, user }: CommentSectionProps) {
-  const threads = await getCommentThreadsByPost(postId);
-  const serialized = serializeThread(threads, user);
+  const tree = await getCommentTreeByPost(postId);
+  const serialized = serializeTree(tree, user);
 
   return (
     <section className="mt-10 dark:border-zinc-800">
@@ -48,7 +55,7 @@ export async function CommentSection({ postId, commentCount, user }: CommentSect
         <p className={`mt-4 ${mutedTextClass}`}>댓글을 작성하려면 로그인하세요.</p>
       )}
 
-      <div className="mt-6">
+      <div>
         {serialized.length === 0 ? (
           <p className={mutedTextClass}>아직 댓글이 없습니다.</p>
         ) : (

@@ -10,10 +10,12 @@ import {
   AVATAR_ALLOWED_CONTENT_TYPES,
   AVATAR_MAX_BYTES,
   type AvatarContentType,
+  type CommentImageContentType,
 } from "@/features/uploads/constants";
-import { generateAvatarObjectKey } from "@/features/uploads/keys";
+import { generateAvatarObjectKey, generateCommentImageObjectKey } from "@/features/uploads/keys";
 import {
   avatarUploadIntentSchema,
+  commentImageUploadIntentSchema,
   confirmAvatarUploadSchema,
 } from "@/features/uploads/validators";
 import { buildPublicObjectUrl, isOwnedAvatarKey } from "@/lib/storage-url";
@@ -29,6 +31,10 @@ export type AvatarUploadUrlResult =
 export type ConfirmAvatarUploadResult =
   | { error: string }
   | { success: true; key: string; publicUrl: string };
+
+export type CommentImageUploadUrlResult =
+  | { error: string }
+  | { uploadUrl: string; key: string; publicUrl: string };
 
 export async function createAvatarUploadUrl(input: {
   filename: string;
@@ -115,4 +121,34 @@ export async function confirmAvatarUpload(key: string): Promise<ConfirmAvatarUpl
     key,
     publicUrl: buildPublicObjectUrl(key),
   };
+}
+
+export async function createCommentImageUploadUrl(input: {
+  filename: string;
+  contentType: string;
+  size: number;
+}): Promise<CommentImageUploadUrlResult> {
+  const user = await requireUser();
+  if (!user) {
+    return { error: "로그인이 필요합니다." };
+  }
+
+  const parsed = commentImageUploadIntentSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "입력값을 확인해 주세요." };
+  }
+
+  const { contentType, size } = parsed.data;
+  const key = generateCommentImageObjectKey(user.id, contentType as CommentImageContentType);
+
+  try {
+    const uploadUrl = await createPresignedPutUrl(key, contentType, size, 60);
+    return {
+      uploadUrl,
+      key,
+      publicUrl: buildPublicObjectUrl(key),
+    };
+  } catch {
+    return { error: "업로드 URL 발급에 실패했습니다." };
+  }
 }

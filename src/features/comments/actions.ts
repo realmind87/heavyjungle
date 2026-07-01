@@ -4,6 +4,8 @@ import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { createCommentSchema, deleteCommentSchema } from "@/features/comments/validators";
 import { getPostById } from "@/features/posts/queries";
+import { isCommentHtmlEmpty } from "@/lib/sanitize-comment-html";
+import { sanitizeCommentHtml } from "@/lib/sanitize-comment-html.server";
 import { canModifyComment, requireUser } from "@/server/auth/permissions";
 import { db } from "@/server/db";
 import { comments, posts } from "@/server/db/schema";
@@ -31,7 +33,12 @@ export async function createComment(
     return { error: parsed.error.issues[0]?.message ?? "입력값을 확인해 주세요." };
   }
 
-  const { postId, parentId, content } = parsed.data;
+  const { postId, parentId } = parsed.data;
+  const content = sanitizeCommentHtml(parsed.data.content);
+
+  if (isCommentHtmlEmpty(content)) {
+    return { error: "댓글을 입력하세요." };
+  }
 
   const post = await getPostById(postId);
   if (!post || post.isDeleted) {
@@ -60,11 +67,6 @@ export async function createComment(
         if (!parent) {
           throw new Error("PARENT_NOT_FOUND");
         }
-
-        // 1단계 대댓글만 허용 — 부모는 최상위 댓글이어야 함
-        if (parent.parentId !== null) {
-          throw new Error("MAX_DEPTH_EXCEEDED");
-        }
       }
 
       await tx.insert(comments).values({
@@ -83,9 +85,6 @@ export async function createComment(
     if (error instanceof Error) {
       if (error.message === "PARENT_NOT_FOUND") {
         return { error: "상위 댓글을 찾을 수 없습니다." };
-      }
-      if (error.message === "MAX_DEPTH_EXCEEDED") {
-        return { error: "대댓글에는 답글을 달 수 없습니다." };
       }
       if (error.message === "POST_NOT_FOUND") {
         return { error: "글을 찾을 수 없습니다." };

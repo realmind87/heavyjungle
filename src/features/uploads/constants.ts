@@ -11,6 +11,10 @@ export const AVATAR_ALLOWED_CONTENT_TYPES = [
 
 export type AvatarContentType = (typeof AVATAR_ALLOWED_CONTENT_TYPES)[number];
 
+export const COMMENT_IMAGE_MAX_BYTES = AVATAR_MAX_BYTES;
+export const COMMENT_IMAGE_ALLOWED_CONTENT_TYPES = AVATAR_ALLOWED_CONTENT_TYPES;
+export type CommentImageContentType = AvatarContentType;
+
 export const AVATAR_CONTENT_TYPE_TO_EXT: Record<AvatarContentType, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
