@@ -270,6 +270,12 @@ export function CommentRichTextEditor({
           contentEditable
           suppressContentEditableWarning
           onInput={onInput}
+          onPaste={(event) => {
+            event.preventDefault();
+            const text = event.clipboardData.getData("text/plain");
+            document.execCommand("insertText", false, text);
+            onInput();
+          }}
           autoFocus={autoFocus}
           className={`${minHeightClass} w-full text-sm text-zinc-900 outline-none dark:text-zinc-50 [&_a]:text-blue-600 [&_a]:underline dark:[&_a]:text-blue-400 [&_img]:max-h-48 [&_img]:max-w-full [&_img]:rounded-md`}
         />

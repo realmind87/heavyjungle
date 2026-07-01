@@ -1,12 +1,12 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import { toast } from "@/components/ui/toast";
 import { deleteComment, type CommentActionState } from "@/features/comments/actions";
 import { CommentComposer } from "@/features/comments/components/comment-composer";
 import { CommentContent } from "@/features/comments/components/comment-content";
 import { displayCommentContent } from "@/features/comments/display";
 import { formatRelativeTime } from "@/lib/time";
-import { errorTextClass } from "@/lib/ui-classes";
 import { ProfileAvatar } from "@/features/profile/components/ProfileAvatar";
 
 const MAX_VISUAL_DEPTH = 8;
@@ -50,20 +50,39 @@ type ReplyFormProps = {
 
 function ReplyForm({ postId, parentId, onCancel }: ReplyFormProps) {
   return (
-    <CommentComposer
-      postId={postId}
-      parentId={parentId}
-      placeholder="답글 작성"
-      submitLabel="답글 달기"
-      onCancel={onCancel}
-      autoFocus
-      compact
-    />
+    <div className="mt-2 border border-zinc-200 rounded-lg p-2 dark:border-zinc-700">
+      <CommentComposer
+        postId={postId}
+        parentId={parentId}
+        placeholder="답글 작성"
+        submitLabel="답글 달기"
+        onCancel={onCancel}
+        autoFocus
+        compact
+      />
+    </div>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 6h18" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M10 11v6M14 11v6" />
+    </svg>
   );
 }
 
 function DeleteCommentButton({ commentId }: { commentId: string }) {
   const [state, formAction, pending] = useActionState(deleteComment, {} as CommentActionState);
+
+  useEffect(() => {
+    if (state.error) {
+      toast.error(state.error);
+    }
+  }, [state.error]);
 
   return (
     <form action={formAction} className="inline">
@@ -71,11 +90,11 @@ function DeleteCommentButton({ commentId }: { commentId: string }) {
       <button
         type="submit"
         disabled={pending}
-        className="text-xs text-red-600 hover:underline disabled:opacity-50 dark:text-red-400"
+        aria-label={pending ? "삭제 중" : "삭제"}
+        className="inline-flex shrink-0 items-center justify-center p-1 text-zinc-500 transition hover:text-red-600 disabled:opacity-50 dark:hover:text-red-400"
       >
-        {pending ? "삭제 중..." : "삭제"}
+        <TrashIcon />
       </button>
-      {state.error && <span className={`ml-2 text-xs ${errorTextClass}`}>{state.error}</span>}
     </form>
   );
 }
@@ -109,17 +128,20 @@ export function CommentNode({ comment, postId, isLoggedIn, depth = 0 }: CommentN
             </span>
           </div>
 
-          {isNested && isLoggedIn && !comment.isDeleted && (
-            <button
-              type="button"
-              onClick={() => setShowReply((open) => !open)}
-              aria-label={showReply ? "답글 취소" : "답글"}
-              className={`inline-flex shrink-0 items-center justify-center p-1 transition ${showReply ? "text-blue-600 dark:text-blue-400" : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-                }`}
-            >
-              <CommentIcon />
-            </button>
-          )}
+          <div className="flex shrink-0 items-center gap-1">
+            {isLoggedIn && !comment.isDeleted && (
+              <button
+                type="button"
+                onClick={() => setShowReply((open) => !open)}
+                aria-label={showReply ? "답글 취소" : "답글"}
+                className={`inline-flex items-center justify-center p-1 transition ${showReply ? "text-blue-600 dark:text-blue-400" : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                  }`}
+              >
+                <CommentIcon />
+              </button>
+            )}
+            {comment.canDelete && !comment.isDeleted && <DeleteCommentButton commentId={comment.id} />}
+          </div>
         </div>
 
         <CommentContent
@@ -127,19 +149,6 @@ export function CommentNode({ comment, postId, isLoggedIn, depth = 0 }: CommentN
           isDeleted={comment.isDeleted}
           className={`mt-2 pl-8 ${comment.isDeleted ? "italic text-zinc-400 dark:text-zinc-500" : ""}`}
         />
-
-        <div className="mt-2 flex items-center gap-3 pl-8">
-          {!isNested && isLoggedIn && !comment.isDeleted && (
-            <button
-              type="button"
-              onClick={() => setShowReply((open) => !open)}
-              className="text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
-            >
-              {showReply ? "취소" : "답글"}
-            </button>
-          )}
-          {comment.canDelete && !comment.isDeleted && <DeleteCommentButton commentId={comment.id} />}
-        </div>
 
         {showReply && (
           <div className="pl-8">

@@ -1,6 +1,7 @@
 import "server-only";
 
 import DOMPurify, { type UponSanitizeAttributeHookEvent } from "isomorphic-dompurify";
+import { hasRichCommentMarkup, normalizeCommentInput, stripCommentNbsp } from "@/lib/sanitize-comment-html";
 import { isAllowedCommentImageSrc } from "@/lib/storage-url";
 
 const ALLOWED_TAGS = ["p", "div", "br", "strong", "b", "em", "i", "a", "img"];
@@ -42,11 +43,18 @@ function commentAfterSanitizeAttributesHook(node: Element) {
 
 /** 댓글 HTML — XSS 방지 후 저장 */
 export function sanitizeCommentHtml(html: string): string {
+  const normalized = normalizeCommentInput(html);
+  if (!hasRichCommentMarkup(normalized)) {
+    return normalized;
+  }
+
+  const cleaned = stripCommentNbsp(normalized);
+
   DOMPurify.addHook("uponSanitizeAttribute", commentAttributeHook);
   DOMPurify.addHook("afterSanitizeAttributes", commentAfterSanitizeAttributesHook);
 
   try {
-    return DOMPurify.sanitize(html, {
+    return DOMPurify.sanitize(cleaned, {
       ALLOWED_TAGS,
       ALLOWED_ATTR,
     }).trim();

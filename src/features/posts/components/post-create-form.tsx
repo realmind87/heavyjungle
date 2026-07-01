@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { createPost, type PostActionState } from "@/features/posts/actions";
 import { PostRichTextEditor } from "@/features/posts/components/post-rich-text-editor";
 import { isPostHtmlEmpty } from "@/lib/sanitize-post-html";
@@ -26,8 +26,16 @@ export function PostCreateForm() {
     setIsContentEmpty(isPostHtmlEmpty(html));
   }
 
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    syncContent();
+    const html = contentInputRef.current?.value ?? "";
+    if (isPostHtmlEmpty(html)) {
+      event.preventDefault();
+    }
+  }
+
   return (
-    <form action={formAction} className="space-y-4" onSubmit={syncContent}>
+    <form action={formAction} className="space-y-4" onSubmit={handleSubmit}>
       <div className="relative">
         {isTitleEmpty && (
           <div
@@ -55,15 +63,14 @@ export function PostCreateForm() {
         isEmpty={isContentEmpty}
         onInput={syncContent}
       />
-      <input ref={contentInputRef} type="hidden" name="content" required defaultValue="" />
+      <input ref={contentInputRef} type="hidden" name="content" defaultValue="" />
 
       {state.error && <p className={errorTextClass}>{state.error}</p>}
       <div className="flex justify-end">
-        <button type="submit" disabled={pending} className={buttonPrimaryClass}>
+        <button type="submit" disabled={pending || isContentEmpty} className={buttonPrimaryClass}>
           {pending ? "등록 중..." : "등록"}
         </button>
       </div>
-
     </form>
   );
 }

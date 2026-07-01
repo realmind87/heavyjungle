@@ -1,4 +1,4 @@
-import { isCommentHtmlContent } from "@/lib/sanitize-comment-html";
+import { isCommentHtmlContent, stripCommentNbsp } from "@/lib/sanitize-comment-html";
 
 type CommentContentProps = {
   content: string;
@@ -25,6 +25,8 @@ export function CommentContent({ content, isDeleted, className = "" }: CommentCo
   }
 
   return (
-    <p className={`whitespace-pre-wrap text-sm text-zinc-900 dark:text-zinc-100 ${className}`}>{content}</p>
+    <p className={`whitespace-pre-wrap text-sm text-zinc-900 dark:text-zinc-100 ${className}`}>
+      {stripCommentNbsp(content)}
+    </p>
   );
 }

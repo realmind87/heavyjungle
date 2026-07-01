@@ -76,12 +76,19 @@ function restoreSavedSelection(savedRange: { current: Range | null }, editor: HT
   restoreSelection(range);
 }
 
-function wrapSelectionWithSpan(styles: Partial<CSSStyleDeclaration>) {
+function applyStylesToElement(element: HTMLElement, styles: Record<string, string>) {
+  for (const [key, value] of Object.entries(styles)) {
+    const prop = key.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`);
+    element.style.setProperty(prop, value);
+  }
+}
+
+function wrapSelectionWithSpan(styles: Record<string, string>) {
   const range = getSelectionRange();
   if (!range) return;
 
   const span = document.createElement("span");
-  Object.assign(span.style, styles);
+  applyStylesToElement(span, styles);
 
   if (range.collapsed) {
     span.appendChild(document.createTextNode("\u200B"));
@@ -119,23 +126,41 @@ function findBlockInEditor(node: Node, editor: HTMLElement): HTMLElement {
 function applyTextAlign(editor: HTMLElement, align: "left" | "center" | "right") {
   const range = getSelectionRange();
   if (!range) return;
-  const block = findBlockInEditor(range.commonAncestorContainer, editor);
-  block.style.textAlign = align;
+
+  let block = findBlockInEditor(range.commonAncestorContainer, editor);
+  if (block === editor) {
+    const wrapper = document.createElement("div");
+    if (editor.childNodes.length === 0) {
+      wrapper.appendChild(document.createElement("br"));
+    } else {
+      while (editor.firstChild) {
+        wrapper.appendChild(editor.firstChild);
+      }
+    }
+    editor.appendChild(wrapper);
+    block = wrapper;
+  }
+
+  block.style.setProperty("text-align", align);
 }
 
 type ToolbarButtonProps = {
   label: string;
   onClick: () => void;
+  onPointerDown?: () => void;
   children: React.ReactNode;
 };
 
-function ToolbarButton({ label, onClick, children }: ToolbarButtonProps) {
+function ToolbarButton({ label, onClick, onPointerDown, children }: ToolbarButtonProps) {
   return (
     <button
       type="button"
       aria-label={label}
       title={label}
-      onMouseDown={preventToolbarBlur}
+      onMouseDown={(event) => {
+        preventToolbarBlur(event);
+        onPointerDown?.();
+      }}
       onClick={onClick}
       className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-zinc-200 bg-white text-sm text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
     >
@@ -174,7 +199,10 @@ function FontSizePicker({ onBeforeOpen, onSelect }: FontSizePickerProps) {
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         aria-label="글자 크기"
-        onPointerDown={onBeforeOpen}
+        onMouseDown={(event) => {
+          preventToolbarBlur(event);
+          onBeforeOpen();
+        }}
         onClick={() => setIsOpen((prev) => !prev)}
         className="inline-flex h-8 min-w-[4.5rem] items-center justify-between gap-1 rounded-md border border-zinc-200 bg-white px-2 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
       >
@@ -252,13 +280,21 @@ export function PostRichTextEditor({
     saveSelectionInEditor(editorRef.current, savedRangeRef);
   }, [editorRef]);
 
+  const saveSelection = useCallback(() => {
+    saveSelectionInEditor(editorRef.current, savedRangeRef);
+  }, [editorRef]);
+
   const applyColor = useCallback(
     (color: string) => {
-      focusEditor();
+      const editor = editorRef.current;
+      if (!editor) return;
+
+      editor.focus();
+      restoreSavedSelection(savedRangeRef, editor);
       wrapSelectionWithSpan({ color });
       onInput();
     },
-    [focusEditor, onInput],
+    [editorRef, onInput],
   );
 
   const applyAlign = useCallback(
@@ -266,6 +302,7 @@ export function PostRichTextEditor({
       const editor = editorRef.current;
       if (!editor) return;
       focusEditor();
+      restoreSavedSelection(savedRangeRef, editor);
       applyTextAlign(editor, align);
       onInput();
     },
@@ -283,8 +320,12 @@ export function PostRichTextEditor({
 
         <ToolbarButton
           label="굵게"
+          onPointerDown={saveSelection}
           onClick={() => {
+            const editor = editorRef.current;
+            if (!editor) return;
             focusEditor();
+            restoreSavedSelection(savedRangeRef, editor);
             toggleInlineTag("strong");
             onInput();
           }}
@@ -294,8 +335,12 @@ export function PostRichTextEditor({
 
         <ToolbarButton
           label="기울임"
+          onPointerDown={saveSelection}
           onClick={() => {
+            const editor = editorRef.current;
+            if (!editor) return;
             focusEditor();
+            restoreSavedSelection(savedRangeRef, editor);
             toggleInlineTag("em");
             onInput();
           }}
@@ -304,12 +349,17 @@ export function PostRichTextEditor({
         </ToolbarButton>
 
         <div className="flex items-center gap-1">
-          <label className="relative inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-md dark:border-zinc-700">
+          <label
+            className="relative inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-md dark:border-zinc-700"
+            onMouseDown={(event) => {
+              preventToolbarBlur(event);
+              saveSelection();
+            }}
+          >
             <span className="sr-only">글자 색상</span>
             <input
               type="color"
               className="absolute inset-0 cursor-pointer opacity-0"
-              onMouseDown={preventToolbarBlur}
               onChange={(event) => applyColor(event.target.value)}
             />
             <svg viewBox="0 0 24 24" className="h-4 w-4 text-zinc-500" aria-hidden="true">
@@ -322,17 +372,17 @@ export function PostRichTextEditor({
         </div>
 
         <div className="ml-auto flex items-center gap-1">
-          <ToolbarButton label="왼쪽 정렬" onClick={() => applyAlign("left")}>
+          <ToolbarButton label="왼쪽 정렬" onPointerDown={saveSelection} onClick={() => applyAlign("left")}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
               <path strokeLinecap="round" d="M4 6h16M4 12h10M4 18h14" />
             </svg>
           </ToolbarButton>
-          <ToolbarButton label="가운데 정렬" onClick={() => applyAlign("center")}>
+          <ToolbarButton label="가운데 정렬" onPointerDown={saveSelection} onClick={() => applyAlign("center")}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
               <path strokeLinecap="round" d="M4 6h16M7 12h10M5 18h14" />
             </svg>
           </ToolbarButton>
-          <ToolbarButton label="오른쪽 정렬" onClick={() => applyAlign("right")}>
+          <ToolbarButton label="오른쪽 정렬" onPointerDown={saveSelection} onClick={() => applyAlign("right")}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
               <path strokeLinecap="round" d="M4 6h16M10 12h10M6 18h14" />
             </svg>

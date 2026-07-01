@@ -46,18 +46,15 @@ export function CommentComposer({
   }, [state.error]);
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
     syncContent();
     const html = contentInputRef.current?.value ?? "";
-    if (isCommentHtmlEmpty(html)) return;
-
-    const formData = new FormData(event.currentTarget);
-    formData.set("content", html);
-    formAction(formData);
+    if (isCommentHtmlEmpty(html)) {
+      event.preventDefault();
+    }
   }
 
   const editor = (
-  <CommentRichTextEditor
+    <CommentRichTextEditor
       editorRef={editorRef}
       placeholder={placeholder}
       isEmpty={isEmpty}
@@ -68,12 +65,12 @@ export function CommentComposer({
   );
 
   const actions = (
-    <div className={`flex items-center gap-2 ${compact ? "" : "justify-end"}`}>
+    <div className={`flex items-center gap-1 ${compact ? "" : "justify-end"}`}>
       {onCancel && (
         <button
           type="button"
           onClick={onCancel}
-          className="text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+          className="border border-zinc-200 rounded-lg px-3 py-2 text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
         >
           취소
         </button>
@@ -83,7 +80,7 @@ export function CommentComposer({
         disabled={pending || isEmpty}
         className={
           compact
-            ? "text-xs font-medium text-zinc-900 disabled:opacity-50 dark:text-zinc-100"
+            ? "border border-zinc-200 rounded-lg px-3 py-2 text-xs font-medium text-zinc-900 disabled:opacity-50 dark:text-zinc-100"
             : buttonPrimaryClass
         }
       >
@@ -96,7 +93,7 @@ export function CommentComposer({
     <form
       action={formAction}
       onSubmit={handleSubmit}
-      className={compact ? "mt-2 space-y-2" : "space-y-2"}
+      className={compact ? "space-y-2" : "space-y-2"}
     >
       <input type="hidden" name="postId" value={postId} />
       {parentId && <input type="hidden" name="parentId" value={parentId} />}

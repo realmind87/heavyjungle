@@ -83,7 +83,6 @@ export function LikeButton({ postId, initialLiked, initialLikeCount, isLoggedIn 
           <HeartIcon />
           {initialLikeCount}
         </PostMetaChip>
-        <span className="text-xs text-zinc-500 dark:text-zinc-400">로그인 후 좋아요</span>
       </div>
     );
   }
@@ -93,9 +92,8 @@ export function LikeButton({ postId, initialLiked, initialLikeCount, isLoggedIn 
       type="button"
       disabled={isPending}
       onClick={handleToggle}
-      className={`${postMetaChipClass} disabled:opacity-50 ${
-        optimistic.liked ? "border-red-200 text-red-600 dark:border-red-900" : "hover:text-red-600"
-      }`}
+      className={`${postMetaChipClass} disabled:opacity-50 ${optimistic.liked ? "border-red-200 text-red-600 dark:border-red-900" : "hover:text-red-600"
+        }`}
       aria-label={optimistic.liked ? "좋아요 취소" : "좋아요"}
     >
       <HeartIcon filled={optimistic.liked} />
