@@ -4,7 +4,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { createComment, type CommentActionState } from "@/features/comments/actions";
 import { CommentRichTextEditor } from "@/features/comments/components/comment-rich-text-editor";
 import { isCommentHtmlEmpty } from "@/lib/sanitize-comment-html";
-import { buttonPrimaryClass, errorTextClass } from "@/lib/ui-classes";
+import { errorTextClass } from "@/lib/ui-classes";
 
 type CommentComposerProps = {
   postId: string;
@@ -59,34 +59,13 @@ export function CommentComposer({
       placeholder={placeholder}
       isEmpty={isEmpty}
       onInput={syncContent}
-      minHeightClass={compact ? "min-h-[3rem]" : "min-h-[4.5rem]"}
+      minHeightClass={compact ? "min-h-[2rem]" : "min-h-[2rem]"}
       autoFocus={autoFocus}
+      submitLabel={submitLabel}
+      submitPending={pending}
+      onCancel={onCancel}
+      compact={compact}
     />
-  );
-
-  const actions = (
-    <div className={`flex items-center gap-1 ${compact ? "" : "justify-end"}`}>
-      {onCancel && (
-        <button
-          type="button"
-          onClick={onCancel}
-          className="border border-zinc-200 rounded-lg px-3 py-2 text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-        >
-          취소
-        </button>
-      )}
-      <button
-        type="submit"
-        disabled={pending || isEmpty}
-        className={
-          compact
-            ? "border border-zinc-200 rounded-lg px-3 py-2 text-xs font-medium text-zinc-900 disabled:opacity-50 dark:text-zinc-100"
-            : buttonPrimaryClass
-        }
-      >
-        {pending ? "등록 중..." : submitLabel}
-      </button>
-    </div>
   );
 
   return (
@@ -100,16 +79,14 @@ export function CommentComposer({
       <input ref={contentInputRef} type="hidden" name="content" defaultValue="" />
 
       {compact ? (
-        <>
+        <div className="rounded-lg border border-zinc-200 bg-white px-3 pt-3 pb-2 dark:border-zinc-700 dark:bg-zinc-900">
           {editor}
           {state.error && <p className={`text-xs ${errorTextClass}`}>{state.error}</p>}
-          {actions}
-        </>
+        </div>
       ) : (
-        <div className="rounded-lg border border-zinc-200 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900">
+        <div className="rounded-lg border border-zinc-200 bg-white px-3 pt-3 pb-2 dark:border-zinc-700 dark:bg-zinc-900">
           {editor}
           {state.error && <p className={errorTextClass}>{state.error}</p>}
-          {actions}
         </div>
       )}
     </form>

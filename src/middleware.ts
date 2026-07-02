@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { SESSION_COOKIE_NAME, isSessionTokenFormatValid } from "@/lib/auth/session-token";
 
-const PROTECTED_PATHS = ["/settings", "/write"];
+const PROTECTED_PATHS = ["/settings", "/write", "/admin"];
 const AUTH_REDIRECT_PATHS = ["/login", "/signup", "/login/find-username", "/login/forgot-password"];
 
 function matchesPath(pathname: string, paths: string[]): boolean {
@@ -44,6 +44,7 @@ export const config = {
   matcher: [
     "/settings/:path*",
     "/write",
+    "/admin",
     "/login",
     "/login/find-username",
     "/login/forgot-password",

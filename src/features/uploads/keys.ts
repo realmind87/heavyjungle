@@ -8,6 +8,9 @@ import {
   AVATAR_CONTENT_TYPE_TO_EXT,
   type AvatarContentType,
   type CommentImageContentType,
+  type PostImageContentType,
+  POST_VIDEO_CONTENT_TYPE_TO_EXT,
+  type PostVideoContentType,
 } from "@/features/uploads/constants";
 
 export function generateAvatarObjectKey(userId: string, contentType: AvatarContentType): string {
@@ -18,4 +21,14 @@ export function generateAvatarObjectKey(userId: string, contentType: AvatarConte
 export function generateCommentImageObjectKey(userId: string, contentType: CommentImageContentType): string {
   const ext = AVATAR_CONTENT_TYPE_TO_EXT[contentType];
   return `comments/${userId}/${randomUUID()}.${ext}`;
+}
+
+export function generatePostImageObjectKey(userId: string, contentType: PostImageContentType): string {
+  const ext = AVATAR_CONTENT_TYPE_TO_EXT[contentType];
+  return `posts/${userId}/${randomUUID()}.${ext}`;
+}
+
+export function generatePostVideoObjectKey(userId: string, contentType: PostVideoContentType): string {
+  const ext = POST_VIDEO_CONTENT_TYPE_TO_EXT[contentType];
+  return `posts/${userId}/${randomUUID()}.${ext}`;
 }

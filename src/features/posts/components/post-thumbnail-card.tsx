@@ -28,6 +28,23 @@ function NoImageIcon() {
   );
 }
 
+function VideoIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      className="h-10 w-10"
+      aria-hidden="true"
+    >
+      <rect x="3" y="5" width="14" height="14" rx="2" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="m17 10 4-2v8l-4-2z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="m9 9 4 3-4 3z" />
+    </svg>
+  );
+}
+
 /** 썸네일 그리드용 글 카드 */
 export function PostThumbnailCard({ post, returnListState }: PostThumbnailCardProps) {
   const postHref = returnListState
@@ -45,6 +62,11 @@ export function PostThumbnailCard({ post, returnListState }: PostThumbnailCardPr
               alt=""
               className="h-full w-full object-cover"
             />
+          ) : post.coverType === "video" || post.coverType === "youtube" ? (
+            <div className="flex flex-col w-full h-full rounded-xl items-center justify-center gap-1 text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-800/80">
+              <VideoIcon />
+              <span className="text-xs">동영상</span>
+            </div>
           ) : (
             <div className="flex flex-col w-full h-full rounded-xl items-center justify-center gap-1 text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-800/80">
               <NoImageIcon />

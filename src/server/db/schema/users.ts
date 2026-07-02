@@ -1,4 +1,6 @@
-import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+
+export const userRoleEnum = pgEnum("user_role", ["user", "admin"]);
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -11,6 +13,7 @@ export const users = pgTable("users", {
   bio: text("bio"),
   /** 아바타 URL (파일 업로드는 다음 단계) */
   avatarUrl: text("avatar_url"),
+  role: userRoleEnum("role").notNull().default("user"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()

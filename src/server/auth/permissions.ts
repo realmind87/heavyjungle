@@ -3,6 +3,7 @@
  */
 import "server-only";
 
+import { env } from "@/lib/env";
 import { getCurrentUser } from "@/server/auth/current-user";
 import type { User } from "@/server/db/schema/users";
 
@@ -14,12 +15,10 @@ export function isAuthor(userId: string, authorId: string): boolean {
   return userId === authorId;
 }
 
-/** ADMIN_USERNAMES 환경변수(쉼표 구분)에 포함된 계정 */
+/** DB role=admin 또는 ADMIN_USERNAMES 환경변수에 포함된 계정 */
 export function isAdmin(user: User): boolean {
-  const raw = process.env.ADMIN_USERNAMES;
-  if (!raw) return false;
-  const admins = raw.split(",").map((s) => s.trim()).filter(Boolean);
-  return admins.includes(user.username);
+  if (user.role === "admin") return true;
+  return env.ADMIN_USERNAMES.includes(user.username);
 }
 
 /** 글 수정·삭제 권한 — 작성자 본인 또는 관리자 */
@@ -37,4 +36,11 @@ export function canModifyComment(user: User | null, authorId: string): boolean {
 /** 관리자 전용 권한 */
 export function requireAdmin(user: User | null): user is User {
   return user !== null && isAdmin(user);
+}
+
+/** 관리자 Server Action/페이지용 — 비관리자는 null */
+export async function requireAdminUser(): Promise<User | null> {
+  const user = await requireUser();
+  if (!requireAdmin(user)) return null;
+  return user;
 }

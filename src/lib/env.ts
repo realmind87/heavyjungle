@@ -28,6 +28,14 @@ const envSchema = z.object({
   /** Resend API — 없으면 development에서 콘솔로 출력 */
   RESEND_API_KEY: z.string().min(1).optional(),
   EMAIL_FROM: z.string().min(1).optional(),
+  /** 관리자 아이디 (쉼표 구분) — DB role과 병행 */
+  ADMIN_USERNAMES: z
+    .string()
+    .optional()
+    .transform((value) => {
+      if (!value) return [] as string[];
+      return value.split(",").map((item) => item.trim()).filter(Boolean);
+    }),
 });
 
 export type Env = z.infer<typeof envSchema>;

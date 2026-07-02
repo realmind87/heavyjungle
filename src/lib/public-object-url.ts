@@ -25,3 +25,29 @@ export function resolveAvatarPublicUrl(stored: string | null | undefined): strin
   }
   return buildPublicObjectUrlFromEnv(stored);
 }
+
+/** 공개 URL 또는 object key에서 storage key 추출 (posts/, comments/ 등) */
+export function parseStorageObjectKeyFromPublicUrl(
+  src: string,
+  prefix: "posts" | "comments" | "avatars",
+): string | null {
+  if (src.startsWith(`${prefix}/`)) {
+    return src;
+  }
+
+  try {
+    const url = new URL(src);
+    const baseUrl = new URL(getPublicBaseUrl());
+    const basePath = baseUrl.pathname.replace(/\/$/, "");
+    let objectPath = url.pathname;
+
+    if (basePath && objectPath.startsWith(basePath)) {
+      objectPath = objectPath.slice(basePath.length);
+    }
+
+    const key = objectPath.replace(/^\//, "");
+    return key.startsWith(`${prefix}/`) ? key : null;
+  } catch {
+    return null;
+  }
+}

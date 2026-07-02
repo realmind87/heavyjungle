@@ -48,7 +48,7 @@ type ReplyFormProps = {
 
 function ReplyForm({ postId, parentId, onCancel }: ReplyFormProps) {
   return (
-    <div className="mt-2 border border-zinc-200 rounded-lg p-2 dark:border-zinc-700">
+    <div className="mt-2">
       <CommentComposer
         postId={postId}
         parentId={parentId}

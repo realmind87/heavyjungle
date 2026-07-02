@@ -11,14 +11,30 @@ import {
   AVATAR_MAX_BYTES,
   type AvatarContentType,
   type CommentImageContentType,
+  type PostImageContentType,
+  type PostVideoContentType,
 } from "@/features/uploads/constants";
-import { generateAvatarObjectKey, generateCommentImageObjectKey } from "@/features/uploads/keys";
+import {
+  generateAvatarObjectKey,
+  generateCommentImageObjectKey,
+  generatePostImageObjectKey,
+  generatePostVideoObjectKey,
+} from "@/features/uploads/keys";
 import {
   avatarUploadIntentSchema,
   commentImageUploadIntentSchema,
   confirmAvatarUploadSchema,
+  deleteCommentImageSchema,
+  deletePostImageSchema,
+  postImageUploadIntentSchema,
+  postVideoUploadIntentSchema,
 } from "@/features/uploads/validators";
-import { buildPublicObjectUrl, isOwnedAvatarKey } from "@/lib/storage-url";
+import {
+  buildPublicObjectUrl,
+  isOwnedAvatarKey,
+  isOwnedCommentImageKey,
+  isOwnedPostImageKey,
+} from "@/lib/storage-url";
 import { requireUser } from "@/server/auth/permissions";
 import { createPresignedPutUrl, deleteObject, headObject } from "@/server/storage/s3";
 import { db } from "@/server/db";
@@ -35,6 +51,16 @@ export type ConfirmAvatarUploadResult =
 export type CommentImageUploadUrlResult =
   | { error: string }
   | { uploadUrl: string; key: string; publicUrl: string };
+
+export type PostImageUploadUrlResult =
+  | { error: string }
+  | { uploadUrl: string; key: string; publicUrl: string };
+
+export type PostVideoUploadUrlResult =
+  | { error: string }
+  | { uploadUrl: string; key: string; publicUrl: string };
+
+export type DeleteUploadedImageResult = { error: string } | { success: true };
 
 export async function createAvatarUploadUrl(input: {
   filename: string;
@@ -151,4 +177,102 @@ export async function createCommentImageUploadUrl(input: {
   } catch {
     return { error: "업로드 URL 발급에 실패했습니다." };
   }
+}
+
+export async function createPostImageUploadUrl(input: {
+  filename: string;
+  contentType: string;
+  size: number;
+}): Promise<PostImageUploadUrlResult> {
+  const user = await requireUser();
+  if (!user) {
+    return { error: "로그인이 필요합니다." };
+  }
+
+  const parsed = postImageUploadIntentSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "입력값을 확인해 주세요." };
+  }
+
+  const { contentType, size } = parsed.data;
+  const key = generatePostImageObjectKey(user.id, contentType as PostImageContentType);
+
+  try {
+    const uploadUrl = await createPresignedPutUrl(key, contentType, size, 60);
+    return {
+      uploadUrl,
+      key,
+      publicUrl: buildPublicObjectUrl(key),
+    };
+  } catch {
+    return { error: "업로드 URL 발급에 실패했습니다." };
+  }
+}
+
+export async function createPostVideoUploadUrl(input: {
+  filename: string;
+  contentType: string;
+  size: number;
+}): Promise<PostVideoUploadUrlResult> {
+  const user = await requireUser();
+  if (!user) {
+    return { error: "로그인이 필요합니다." };
+  }
+
+  const parsed = postVideoUploadIntentSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "입력값을 확인해 주세요." };
+  }
+
+  const { contentType, size } = parsed.data;
+  const key = generatePostVideoObjectKey(user.id, contentType as PostVideoContentType);
+
+  try {
+    const uploadUrl = await createPresignedPutUrl(key, contentType, size, 60);
+    return {
+      uploadUrl,
+      key,
+      publicUrl: buildPublicObjectUrl(key),
+    };
+  } catch {
+    return { error: "업로드 URL 발급에 실패했습니다." };
+  }
+}
+
+export async function deletePostImage(key: string): Promise<DeleteUploadedImageResult> {
+  const user = await requireUser();
+  if (!user) {
+    return { error: "로그인이 필요합니다." };
+  }
+
+  const parsed = deletePostImageSchema.safeParse({ key });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "유효하지 않은 요청입니다." };
+  }
+
+  if (!isOwnedPostImageKey(key, user.id)) {
+    return { error: "접근 권한이 없습니다." };
+  }
+
+  await deleteObject(key).catch(() => undefined);
+  return { success: true };
+}
+
+export async function deleteCommentImage(key: string): Promise<DeleteUploadedImageResult> {
+  const user = await requireUser();
+  if (!user) {
+    return { error: "로그인이 필요합니다." };
+  }
+
+  const parsed = deleteCommentImageSchema.safeParse({ key });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "유효하지 않은 요청입니다." };
+  }
+
+  if (!isOwnedCommentImageKey(key, user.id)) {
+    return { error: "접근 권한이 없습니다." };
+  }
+
+  await deleteObject(key).catch(() => undefined);
+  return { success: true };
 }

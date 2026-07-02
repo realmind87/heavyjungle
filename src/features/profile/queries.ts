@@ -8,7 +8,7 @@ import { buildCursorPage, decodeCursor } from "@/lib/cursor";
 import type { CursorPage } from "@/lib/cursor";
 import type { PostListItem } from "@/features/posts/queries";
 import { userPostsQuerySchema } from "@/features/profile/validators";
-import { extractPostCoverImageUrl } from "@/lib/post-cover-image";
+import { extractPostCoverMedia } from "@/lib/post-cover-image";
 import { resolveAvatarPublicUrl } from "@/lib/public-object-url";
 import { db } from "@/server/db";
 import { posts, users } from "@/server/db/schema";
@@ -99,20 +99,24 @@ export async function getUserPosts(
     .orderBy(desc(posts.createdAt), desc(posts.id))
     .limit(limit + 1);
 
-  const items: PostListItem[] = rows.map((row) => ({
-    id: row.id,
-    title: row.title,
-    viewCount: row.viewCount,
-    likeCount: row.likeCount,
-    commentCount: row.commentCount,
-    createdAt: row.createdAt,
-    coverImageUrl: resolveAvatarPublicUrl(extractPostCoverImageUrl(row.content)),
-    author: {
-      id: row.authorId,
-      username: row.authorUsername,
-      avatarUrl: row.authorAvatarUrl,
-    },
-  }));
+  const items: PostListItem[] = rows.map((row) => {
+    const cover = extractPostCoverMedia(row.content);
+    return {
+      id: row.id,
+      title: row.title,
+      viewCount: row.viewCount,
+      likeCount: row.likeCount,
+      commentCount: row.commentCount,
+      createdAt: row.createdAt,
+      coverType: cover?.type ?? null,
+      coverImageUrl: resolveAvatarPublicUrl(cover?.previewUrl),
+      author: {
+        id: row.authorId,
+        username: row.authorUsername,
+        avatarUrl: row.authorAvatarUrl,
+      },
+    };
+  });
 
   return buildCursorPage(items, limit);
 }

@@ -1,10 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useRef, useState } from "react";
 import { createPost, type PostActionState } from "@/features/posts/actions";
 import { PostRichTextEditor } from "@/features/posts/components/post-rich-text-editor";
 import { isPostHtmlEmpty } from "@/lib/sanitize-post-html";
-import { buttonPrimaryClass, errorTextClass } from "@/lib/ui-classes";
+import { buttonPrimaryClass, buttonSecondaryClass, errorTextClass } from "@/lib/ui-classes";
 
 const CONTENT_PLACEHOLDER = "내용을 입력하세요";
 const TITLE_PLACEHOLDER = "제목을 입력하세요";
@@ -64,9 +65,11 @@ export function PostCreateForm() {
         onInput={syncContent}
       />
       <input ref={contentInputRef} type="hidden" name="content" defaultValue="" />
-
       {state.error && <p className={errorTextClass}>{state.error}</p>}
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <Link href="/" className={buttonSecondaryClass}>
+          취소
+        </Link>
         <button type="submit" disabled={pending || isContentEmpty} className={buttonPrimaryClass}>
           {pending ? "등록 중..." : "등록"}
         </button>

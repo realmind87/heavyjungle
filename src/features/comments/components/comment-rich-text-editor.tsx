@@ -2,11 +2,13 @@
 
 import { type RefObject, useCallback, useRef, useState } from "react";
 import { toast } from "@/components/ui/toast";
+import { createCommentImageUploadUrl, deleteCommentImage } from "@/features/uploads/actions";
 import {
   COMMENT_IMAGE_ALLOWED_CONTENT_TYPES,
   COMMENT_IMAGE_MAX_BYTES,
 } from "@/features/uploads/constants";
-import { createCommentImageUploadUrl } from "@/features/uploads/actions";
+import { prepareEditorImage, useRichTextImageControls } from "@/lib/rich-text-editor-image";
+import { buttonPrimaryClass } from "@/lib/ui-classes";
 
 function preventToolbarBlur(event: React.MouseEvent) {
   event.preventDefault();
@@ -54,6 +56,10 @@ type CommentRichTextEditorProps = {
   onInput: () => void;
   minHeightClass?: string;
   autoFocus?: boolean;
+  submitLabel?: string;
+  submitPending?: boolean;
+  onCancel?: () => void;
+  compact?: boolean;
 };
 
 type ToolbarButtonProps = {
@@ -86,9 +92,20 @@ export function CommentRichTextEditor({
   onInput,
   minHeightClass = "min-h-[4.5rem]",
   autoFocus = false,
+  submitLabel = "등록",
+  submitPending = false,
+  onCancel,
+  compact = false,
 }: CommentRichTextEditorProps) {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+
+  const { selectedImage, removeSelectedImage, deleteButtonPosition } = useRichTextImageControls({
+    editorRef,
+    storagePrefix: "comments",
+    onInput,
+    deleteImage: deleteCommentImage,
+  });
 
   const focusEditor = useCallback(() => {
     editorRef.current?.focus();
@@ -142,6 +159,7 @@ export function CommentRichTextEditor({
       image.src = publicUrl;
       image.alt = alt;
       image.className = "my-1 max-h-48 max-w-full rounded-md";
+      prepareEditorImage(image);
 
       if (range) {
         range.insertNode(image);
@@ -202,57 +220,10 @@ export function CommentRichTextEditor({
     [insertImageAtCursor],
   );
 
+
+
   return (
     <div>
-      <div
-        role="toolbar"
-        aria-label="댓글 도구"
-        className="mb-2 flex items-center gap-0.5 border-b border-zinc-100 pb-2 dark:border-zinc-800"
-      >
-        <ToolbarButton label="링크 삽입" onClick={insertLink}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"
-            />
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
-            />
-          </svg>
-        </ToolbarButton>
-
-        <ToolbarButton
-          label="이미지 삽입"
-          disabled={uploadingImage}
-          onClick={() => imageInputRef.current?.click()}
-        >
-          {uploadingImage ? (
-            <span className="text-[10px]">…</span>
-          ) : (
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <circle cx="8.5" cy="8.5" r="1.5" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="m21 15-5-5L5 21" />
-            </svg>
-          )}
-        </ToolbarButton>
-
-        <input
-          ref={imageInputRef}
-          type="file"
-          accept={COMMENT_IMAGE_ALLOWED_CONTENT_TYPES.join(",")}
-          className="hidden"
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            event.target.value = "";
-            if (file) void handleImageFile(file);
-          }}
-        />
-      </div>
-
       <div className="relative">
         {isEmpty && (
           <div
@@ -277,8 +248,93 @@ export function CommentRichTextEditor({
             onInput();
           }}
           autoFocus={autoFocus}
-          className={`${minHeightClass} w-full text-sm text-zinc-900 outline-none dark:text-zinc-50 [&_a]:text-blue-600 [&_a]:underline dark:[&_a]:text-blue-400 [&_img]:max-h-48 [&_img]:max-w-full [&_img]:rounded-md`}
+          className={`${minHeightClass} w-full text-sm text-zinc-900 outline-none dark:text-zinc-50 [&_a]:text-blue-600 [&_a]:underline dark:[&_a]:text-blue-400 [&_img]:max-h-48 [&_img]:max-w-full [&_img]:rounded-md [&_img]:cursor-pointer [&_img.editor-image-selected]:outline [&_img.editor-image-selected]:outline-2 [&_img.editor-image-selected]:outline-blue-500 [&_img.editor-image-selected]:outline-offset-2`}
         />
+        {selectedImage && deleteButtonPosition && (
+          <button
+            type="button"
+            aria-label="이미지 삭제"
+            title="이미지 삭제"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => void removeSelectedImage()}
+            className="absolute z-10 inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow transition hover:bg-red-600"
+            style={{ top: deleteButtonPosition.top, left: deleteButtonPosition.left }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3 w-3" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        )}
+      </div>
+
+      <div className="flex items-center justify-between gap-2">
+        <div
+          role="toolbar"
+          aria-label="댓글 도구"
+          className="flex items-center gap-0.5"
+        >
+          <ToolbarButton label="링크 삽입" onClick={insertLink}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
+              />
+            </svg>
+          </ToolbarButton>
+
+          <ToolbarButton
+            label="이미지 삽입"
+            disabled={uploadingImage}
+            onClick={() => imageInputRef.current?.click()}
+          >
+            {uploadingImage ? (
+              <span className="text-[10px]">…</span>
+            ) : (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="m21 15-5-5L5 21" />
+              </svg>
+            )}
+          </ToolbarButton>
+
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept={COMMENT_IMAGE_ALLOWED_CONTENT_TYPES.join(",")}
+            className="hidden"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              event.target.value = "";
+              if (file) void handleImageFile(file);
+            }}
+          />
+        </div>
+
+        <div className="flex shrink-0 items-center gap-1">
+          {onCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="rounded-lg border border-zinc-200 px-2 py-1 text-xs text-zinc-500 hover:text-zinc-700 dark:border-zinc-700 dark:hover:text-zinc-300"
+            >
+              취소
+            </button>
+          )}
+          <button
+            type="submit"
+            disabled={submitPending || isEmpty}
+            className="rounded-lg border border-zinc-200 px-2 py-1 text-xs font-medium text-zinc-900 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-100"
+          >
+            {submitPending ? "등록 중..." : submitLabel}
+          </button>
+        </div>
       </div>
     </div>
   );

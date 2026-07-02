@@ -1,4 +1,6 @@
 import { getCurrentUser } from "@/server/auth/current-user";
+import { isAdmin } from "@/server/auth/permissions";
+import { resolveAvatarPublicUrl } from "@/lib/public-object-url";
 import { Header } from "./header";
 
 export async function SiteHeader() {
@@ -10,6 +12,8 @@ export async function SiteHeader() {
         user
           ? {
               username: user.username,
+              avatarUrl: resolveAvatarPublicUrl(user.avatarUrl),
+              isAdmin: isAdmin(user),
             }
           : null
       }

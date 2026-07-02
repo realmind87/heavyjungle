@@ -12,7 +12,7 @@ import {
   type PostCursor,
   type PostSort,
 } from "@/features/posts/post-sort";
-import { extractPostCoverImageUrl } from "@/lib/post-cover-image";
+import { extractPostCoverMedia, type PostCoverType } from "@/lib/post-cover-image";
 import { resolveAvatarPublicUrl } from "@/lib/public-object-url";
 import { db } from "@/server/db";
 import { posts, users } from "@/server/db/schema";
@@ -24,6 +24,7 @@ export type PostListItem = {
   likeCount: number;
   commentCount: number;
   createdAt: Date;
+  coverType: PostCoverType | null;
   coverImageUrl: string | null;
   author: {
     id: string;
@@ -59,6 +60,7 @@ const postListSelect = {
 };
 
 function mapPostListItem(row: PostRow): PostListItem {
+  const cover = extractPostCoverMedia(row.content);
   return {
     id: row.id,
     title: row.title,
@@ -66,7 +68,8 @@ function mapPostListItem(row: PostRow): PostListItem {
     likeCount: row.likeCount,
     commentCount: row.commentCount,
     createdAt: row.createdAt,
-    coverImageUrl: resolveAvatarPublicUrl(extractPostCoverImageUrl(row.content)),
+    coverType: cover?.type ?? null,
+    coverImageUrl: resolveAvatarPublicUrl(cover?.previewUrl),
     author: {
       id: row.authorId,
       username: row.authorUsername,

@@ -6,8 +6,8 @@ import { themeInitScript } from "@/lib/theme";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "배포는기도다",
-  description: "Next.js App Router with Server Components",
+  title: "Heavy Jungle",
+  description: "Heavy Jungle is a community for developers to share their knowledge and experiences.",
 };
 
 export default function RootLayout({

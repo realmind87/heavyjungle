@@ -57,6 +57,13 @@
       "when": 1782899823978,
       "tag": "0008_dashing_lyja",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1782993505316,
+      "tag": "0009_bright_pixie",
+      "breakpoints": true
     }
   ]
 }

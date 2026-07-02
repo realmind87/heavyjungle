@@ -9,6 +9,8 @@ import { useThemeMode } from "@/hooks/use-theme-mode";
 
 type HeaderUser = {
   username: string;
+  avatarUrl?: string | null;
+  isAdmin?: boolean;
 };
 
 type AuthModal = "login" | "signup" | null;
@@ -17,7 +19,7 @@ function getProfileInitial(username: string) {
   return username.charAt(0).toUpperCase();
 }
 
-function ProfileMenu({ username }: { username: string }) {
+function ProfileMenu({ username, avatarUrl, isAdmin }: { username: string; avatarUrl?: string | null; isAdmin?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { isDark, setThemeMode } = useThemeMode();
@@ -53,13 +55,36 @@ function ProfileMenu({ username }: { username: string }) {
         onClick={() => setIsOpen((prev) => !prev)}
         className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-sm font-semibold text-white ring-2 ring-zinc-200 transition hover:ring-zinc-300 dark:bg-zinc-100 dark:text-zinc-900 dark:ring-zinc-700 dark:hover:ring-zinc-600"
       >
-        {getProfileInitial(username)}
+        {avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- S3 공개 URL 아바타
+          <img
+            src={avatarUrl}
+            alt={`${username} 프로필 이미지`}
+            className="h-full w-full rounded-full object-cover"
+          />
+        ) : (
+          getProfileInitial(username)
+        )}
       </button>
 
       {isOpen && (
         <div className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
           <div className="border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
-            <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">{username}</p>
+            <div className="flex items-center gap-2">
+              {avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- S3 공개 URL 아바타
+                <img
+                  src={avatarUrl}
+                  alt={`${username} 프로필 이미지`}
+                  className="h-7 w-7 rounded-full object-cover"
+                />
+              ) : (
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-zinc-200 text-xs font-semibold text-zinc-700 dark:bg-zinc-700 dark:text-zinc-100">
+                  {getProfileInitial(username)}
+                </span>
+              )}
+              <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">{username}</p>
+            </div>
           </div>
 
           <div className="p-2">
@@ -70,6 +95,16 @@ function ProfileMenu({ username }: { username: string }) {
             >
               내 프로필
             </Link>
+
+            {isAdmin && (
+              <Link
+                href="/admin"
+                onClick={() => setIsOpen(false)}
+                className="block rounded-lg px-3 py-2 text-sm text-zinc-700 transition hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              >
+                관리자
+              </Link>
+            )}
 
             <div className="flex items-center justify-between gap-3 rounded-lg px-3 py-2">
               <span className="text-sm text-zinc-700 dark:text-zinc-300">
@@ -168,7 +203,7 @@ export function Header({ user }: HeaderProps) {
             href="/"
             className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-xl"
           >
-            배포는기도다
+            Heavy Jungle
           </Link>
 
           <div className="flex items-center gap-5 sm:gap-2">
@@ -219,7 +254,7 @@ export function Header({ user }: HeaderProps) {
                 </svg>
               </Link>
             )}
-            {user && <ProfileMenu username={user.username} />}
+            {user && <ProfileMenu username={user.username} avatarUrl={user.avatarUrl} isAdmin={user.isAdmin} />}
           </div>
         </div>
 
