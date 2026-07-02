@@ -8,6 +8,8 @@ import { buildCursorPage, decodeCursor } from "@/lib/cursor";
 import type { CursorPage } from "@/lib/cursor";
 import type { PostListItem } from "@/features/posts/queries";
 import { userPostsQuerySchema } from "@/features/profile/validators";
+import { extractPostCoverImageUrl } from "@/lib/post-cover-image";
+import { resolveAvatarPublicUrl } from "@/lib/public-object-url";
 import { db } from "@/server/db";
 import { posts, users } from "@/server/db/schema";
 
@@ -74,10 +76,15 @@ export async function getUserPosts(
   const { cursor: rawCursor, limit } = userPostsQuerySchema.parse(options);
   const cursor = decodeCursor(rawCursor);
 
+  const cursorFilter = buildCursorFilter(cursor);
+  const filters = [eq(posts.authorId, userId), eq(posts.isDeleted, false)];
+  if (cursorFilter) filters.push(cursorFilter);
+
   const rows = await db
     .select({
       id: posts.id,
       title: posts.title,
+      content: posts.content,
       viewCount: posts.viewCount,
       likeCount: posts.likeCount,
       commentCount: posts.commentCount,
@@ -88,13 +95,7 @@ export async function getUserPosts(
     })
     .from(posts)
     .innerJoin(users, eq(posts.authorId, users.id))
-    .where(
-      and(
-        eq(posts.authorId, userId),
-        eq(posts.isDeleted, false),
-        buildCursorFilter(cursor),
-      ),
-    )
+    .where(and(...filters))
     .orderBy(desc(posts.createdAt), desc(posts.id))
     .limit(limit + 1);
 
@@ -105,6 +106,7 @@ export async function getUserPosts(
     likeCount: row.likeCount,
     commentCount: row.commentCount,
     createdAt: row.createdAt,
+    coverImageUrl: resolveAvatarPublicUrl(extractPostCoverImageUrl(row.content)),
     author: {
       id: row.authorId,
       username: row.authorUsername,

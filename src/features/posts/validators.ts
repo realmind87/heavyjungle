@@ -18,6 +18,7 @@ export type UpdatePostInput = z.infer<typeof updatePostSchema>;
 export const postListQuerySchema = z.object({
   cursor: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
+  sort: z.enum(["latest", "popular", "oldest"]).default("latest"),
 });
 
 export type PostListQuery = z.infer<typeof postListQuerySchema>;

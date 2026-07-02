@@ -3,10 +3,17 @@
  */
 import "server-only";
 
-import { and, desc, eq, lt, or } from "drizzle-orm";
-import { buildCursorPage, decodeCursor } from "@/lib/cursor";
+import { and, asc, desc, eq, gt, lt, or } from "drizzle-orm";
 import type { CursorPage } from "@/lib/cursor";
 import { postListQuerySchema } from "@/features/posts/validators";
+import {
+  decodePostCursor,
+  encodePostCursor,
+  type PostCursor,
+  type PostSort,
+} from "@/features/posts/post-sort";
+import { extractPostCoverImageUrl } from "@/lib/post-cover-image";
+import { resolveAvatarPublicUrl } from "@/lib/public-object-url";
 import { db } from "@/server/db";
 import { posts, users } from "@/server/db/schema";
 
@@ -17,6 +24,7 @@ export type PostListItem = {
   likeCount: number;
   commentCount: number;
   createdAt: Date;
+  coverImageUrl: string | null;
   author: {
     id: string;
     username: string;
@@ -24,32 +32,33 @@ export type PostListItem = {
   };
 };
 
-async function fetchPostRows(
-  whereClause: ReturnType<typeof and> | ReturnType<typeof eq> | undefined,
-  limit: number,
-) {
-  return db
-    .select({
-      id: posts.id,
-      title: posts.title,
-      viewCount: posts.viewCount,
-      likeCount: posts.likeCount,
-      commentCount: posts.commentCount,
-      createdAt: posts.createdAt,
-      authorId: users.id,
-      authorUsername: users.username,
-      authorAvatarUrl: users.avatarUrl,
-    })
-    .from(posts)
-    .innerJoin(users, eq(posts.authorId, users.id))
-    .where(whereClause)
-    .orderBy(desc(posts.createdAt), desc(posts.id))
-    .limit(limit + 1);
-}
+type PostRow = {
+  id: string;
+  title: string;
+  content: string;
+  viewCount: number;
+  likeCount: number;
+  commentCount: number;
+  createdAt: Date;
+  authorId: string;
+  authorUsername: string;
+  authorAvatarUrl: string | null;
+};
 
-function mapPostListItem(
-  row: Awaited<ReturnType<typeof fetchPostRows>>[number],
-): PostListItem {
+const postListSelect = {
+  id: posts.id,
+  title: posts.title,
+  content: posts.content,
+  viewCount: posts.viewCount,
+  likeCount: posts.likeCount,
+  commentCount: posts.commentCount,
+  createdAt: posts.createdAt,
+  authorId: users.id,
+  authorUsername: users.username,
+  authorAvatarUrl: users.avatarUrl,
+};
+
+function mapPostListItem(row: PostRow): PostListItem {
   return {
     id: row.id,
     title: row.title,
@@ -57,6 +66,7 @@ function mapPostListItem(
     likeCount: row.likeCount,
     commentCount: row.commentCount,
     createdAt: row.createdAt,
+    coverImageUrl: resolveAvatarPublicUrl(extractPostCoverImageUrl(row.content)),
     author: {
       id: row.authorId,
       username: row.authorUsername,
@@ -65,7 +75,7 @@ function mapPostListItem(
   };
 }
 
-function buildCursorFilter(cursor: ReturnType<typeof decodeCursor>) {
+function buildLatestCursorFilter(cursor: Extract<PostCursor, { sort: "latest" }> | null) {
   if (!cursor) return undefined;
   return or(
     lt(posts.createdAt, new Date(cursor.createdAt)),
@@ -73,20 +83,104 @@ function buildCursorFilter(cursor: ReturnType<typeof decodeCursor>) {
   );
 }
 
-/** 홈 — 최신글 */
+function buildPopularCursorFilter(cursor: Extract<PostCursor, { sort: "popular" }> | null) {
+  if (!cursor) return undefined;
+  return or(
+    lt(posts.likeCount, cursor.likeCount),
+    and(eq(posts.likeCount, cursor.likeCount), lt(posts.id, cursor.id)),
+  );
+}
+
+function buildOldestCursorFilter(cursor: Extract<PostCursor, { sort: "oldest" }> | null) {
+  if (!cursor) return undefined;
+  return or(
+    gt(posts.createdAt, new Date(cursor.createdAt)),
+    and(eq(posts.createdAt, new Date(cursor.createdAt)), gt(posts.id, cursor.id)),
+  );
+}
+
+function buildCursorPageForSort(rows: PostRow[], limit: number, sort: PostSort): CursorPage<PostListItem> {
+  const hasMore = rows.length > limit;
+  const slice = hasMore ? rows.slice(0, limit) : rows;
+  const items = slice.map(mapPostListItem);
+  const last = slice[slice.length - 1];
+
+  let nextCursor: string | null = null;
+  if (hasMore && last) {
+    let cursor: PostCursor;
+    if (sort === "popular") {
+      cursor = { sort: "popular", likeCount: last.likeCount, id: last.id };
+    } else if (sort === "oldest") {
+      cursor = { sort: "oldest", createdAt: last.createdAt.toISOString(), id: last.id };
+    } else {
+      cursor = { sort: "latest", createdAt: last.createdAt.toISOString(), id: last.id };
+    }
+    nextCursor = encodePostCursor(cursor);
+  }
+
+  return { items, nextCursor, hasMore };
+}
+
+async function fetchPostRows(sort: PostSort, cursor: PostCursor | null, limit: number) {
+  const baseWhere = eq(posts.isDeleted, false);
+
+  if (sort === "popular") {
+    const popularCursor = cursor?.sort === "popular" ? cursor : null;
+    const cursorFilter = buildPopularCursorFilter(popularCursor);
+    const whereClause = cursorFilter ? and(baseWhere, cursorFilter) : baseWhere;
+
+    return db
+      .select(postListSelect)
+      .from(posts)
+      .innerJoin(users, eq(posts.authorId, users.id))
+      .where(whereClause)
+      .orderBy(desc(posts.likeCount), desc(posts.id))
+      .limit(limit + 1);
+  }
+
+  if (sort === "oldest") {
+    const oldestCursor = cursor?.sort === "oldest" ? cursor : null;
+    const cursorFilter = buildOldestCursorFilter(oldestCursor);
+    const whereClause = cursorFilter ? and(baseWhere, cursorFilter) : baseWhere;
+
+    return db
+      .select(postListSelect)
+      .from(posts)
+      .innerJoin(users, eq(posts.authorId, users.id))
+      .where(whereClause)
+      .orderBy(asc(posts.createdAt), asc(posts.id))
+      .limit(limit + 1);
+  }
+
+  const latestCursor = cursor?.sort === "latest" ? cursor : null;
+  const cursorFilter = buildLatestCursorFilter(latestCursor);
+  const whereClause = cursorFilter ? and(baseWhere, cursorFilter) : baseWhere;
+
+  return db
+    .select(postListSelect)
+    .from(posts)
+    .innerJoin(users, eq(posts.authorId, users.id))
+    .where(whereClause)
+    .orderBy(desc(posts.createdAt), desc(posts.id))
+    .limit(limit + 1);
+}
+
+/** 홈 글 목록 — 정렬·커서 페이지네이션 */
+export async function listPosts(
+  options: { cursor?: string; limit?: number; sort?: PostSort } = {},
+): Promise<CursorPage<PostListItem>> {
+  const { cursor: rawCursor, limit, sort } = postListQuerySchema.parse(options);
+  const cursor = decodePostCursor(rawCursor, sort);
+  const rows = await fetchPostRows(sort, cursor, limit);
+
+  return buildCursorPageForSort(rows, limit, sort);
+}
+
+/** @deprecated listPosts 사용 */
 export async function listRecentPosts(
   options: { cursor?: string; limit?: number } = {},
 ): Promise<CursorPage<PostListItem>> {
-  const { cursor: rawCursor, limit } = postListQuerySchema.parse(options);
-  const cursor = decodeCursor(rawCursor);
-  const cursorFilter = buildCursorFilter(cursor);
-  const whereClause = cursorFilter
-    ? and(eq(posts.isDeleted, false), cursorFilter)
-    : eq(posts.isDeleted, false);
-
-  const rows = await fetchPostRows(whereClause, limit);
-
-  return buildCursorPage(rows.map(mapPostListItem), limit);
+  return listPosts({ ...options, sort: "latest" });
 }
 
 export async function getPostById(id: string) {

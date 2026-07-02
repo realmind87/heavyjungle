@@ -9,15 +9,17 @@ import { PostContent } from "@/features/posts/components/post-content";
 import { PostDeleteButton } from "@/features/posts/components/post-delete-button";
 import { PostViewCount } from "@/features/posts/components/post-view-count";
 import { getPostById } from "@/features/posts/queries";
-import { ProfileAvatar } from "@/features/profile/components/ProfileAvatar";
+import { ProfileAuthorLink } from "@/features/profile/components/ProfileAuthorLink";
 import { resolveAvatarPublicUrl } from "@/lib/storage-url";
 import { formatRelativeTime } from "@/lib/time";
 import { canModifyPost } from "@/server/auth/permissions";
 import { getCurrentUser } from "@/server/auth/current-user";
+import { buildBackHrefFromListParam } from "@/features/posts/post-list-state";
 import { linkMutedClass, pageTitleClass } from "@/lib/ui-classes";
 
 type PageProps = {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ list?: string }>;
 };
 
 function CommentIcon() {
@@ -37,8 +39,10 @@ function EditIcon() {
   );
 }
 
-export default async function PostDetailPage({ params }: PageProps) {
+export default async function PostDetailPage({ params, searchParams }: PageProps) {
   const { id: postId } = await params;
+  const { list } = await searchParams;
+  const backHref = buildBackHrefFromListParam(list);
   const user = await getCurrentUser();
 
   const post = await getPostById(postId);
@@ -52,18 +56,17 @@ export default async function PostDetailPage({ params }: PageProps) {
     <div className="min-h-screen">
       <SiteHeader />
       <main className="mx-auto max-w-4xl px-4 py-8">
-        <Link href="/" className={linkMutedClass}>
+        <Link href={backHref} className={linkMutedClass}>
           ← 목록으로
         </Link>
 
         <article className="mt-6">
           <div className="mt-2 flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400">
-            <ProfileAvatar
-              name={post.author.displayName ?? post.author.username}
+            <ProfileAuthorLink
+              username={post.author.username}
+              displayName={post.author.displayName}
               avatarUrl={resolveAvatarPublicUrl(post.author.avatarUrl)}
-              size="xs"
             />
-            <span>{post.author.username}</span>
             <span>·</span>
             <div className="text-xs text-zinc-500 dark:text-zinc-400">
               <time dateTime={post.createdAt.toISOString()}>{formatRelativeTime(post.createdAt)}</time>

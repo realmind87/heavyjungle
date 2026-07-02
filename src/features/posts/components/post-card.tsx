@@ -1,35 +1,38 @@
 import Link from "next/link";
 import { formatRelativeTime } from "@/lib/time";
 import type { PostListItem } from "@/features/posts/queries";
-import { ProfileAvatar } from "@/features/profile/components/ProfileAvatar";
-import { resolveAvatarPublicUrl } from "@/lib/storage-url";
+import { buildPostDetailHref, type PostListUiState } from "@/features/posts/post-list-state";
+import { ProfileAuthorLink } from "@/features/profile/components/ProfileAuthorLink";
+import { resolveAvatarPublicUrl } from "@/lib/public-object-url";
 
 type PostCardProps = {
   post: PostListItem;
+  returnListState?: Pick<PostListUiState, "sort" | "view">;
 };
 
 /** 글 목록 카드 — 제목, 메타 */
-export function PostCard({ post }: PostCardProps) {
+export function PostCard({ post, returnListState }: PostCardProps) {
+  const postHref = returnListState
+    ? buildPostDetailHref(post.id, returnListState)
+    : `/posts/${post.id}`;
+
   return (
     <article className="border-b border-zinc-200 py-4 dark:border-zinc-800">
       <div className="min-w-0 px-2">
-        <div className="mb-2 flex items-center gap-1.5">
-          <ProfileAvatar
-            name={post.author.username}
+        <div className="mb-2">
+          <ProfileAuthorLink
+            username={post.author.username}
             avatarUrl={resolveAvatarPublicUrl(post.author.avatarUrl)}
-            size="xs"
           />
-          <span className="text-xs text-zinc-500 dark:text-zinc-400">{post.author.username}</span>
         </div>
 
         <div className="flex justify-between gap-1">
           <Link
-            href={`/posts/${post.id}`}
+            href={postHref}
             className="block font-medium text-zinc-900 hover:underline dark:text-zinc-50"
           >
             {post.title}
           </Link>
-
         </div>
 
         <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">

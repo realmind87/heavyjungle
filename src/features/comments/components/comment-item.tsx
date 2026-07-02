@@ -7,7 +7,7 @@ import { CommentComposer } from "@/features/comments/components/comment-composer
 import { CommentContent } from "@/features/comments/components/comment-content";
 import { displayCommentContent } from "@/features/comments/display";
 import { formatRelativeTime } from "@/lib/time";
-import { ProfileAvatar } from "@/features/profile/components/ProfileAvatar";
+import { ProfileAuthorLink } from "@/features/profile/components/ProfileAuthorLink";
 
 export type SerializableComment = {
   id: string;
@@ -116,14 +116,12 @@ export function CommentNode({ comment, postId, isLoggedIn, depth = 0 }: CommentN
       <article className="rounded-lg bg-white p-3 dark:bg-zinc-900">
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-            <ProfileAvatar
-              name={comment.author.displayName ?? comment.author.username}
+            <ProfileAuthorLink
+              username={comment.author.username}
+              displayName={comment.author.displayName}
               avatarUrl={comment.author.avatarPublicUrl}
-              size="xs"
             />
-            <span className="truncate">
-              {comment.author.username} · {formatRelativeTime(comment.createdAt)}
-            </span>
+            <span className="shrink-0">· {formatRelativeTime(comment.createdAt)}</span>
           </div>
 
           <div className="flex shrink-0 items-center gap-1">
