@@ -8,9 +8,23 @@ import { DeleteObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } fr
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { env } from "@/lib/env";
 
-const globalForS3 = globalThis as unknown as { s3Client?: S3Client };
+const globalForS3 = globalThis as unknown as { s3Client?: S3Client; s3PresignClient?: S3Client };
 
-/** S3Client 싱글톤 — dev HMR 시 globalThis 캐싱 */
+/** 브라우저 업로드용 — S3_PUBLIC_URL 기준 (HTTPS). 서버 내부 통신은 getS3Client() 사용 */
+function getS3PresignEndpoint(): string {
+  const publicBase = new URL(env.S3_PUBLIC_URL);
+  const bucketPath = `/${env.S3_BUCKET}`;
+  let path = publicBase.pathname.replace(/\/$/, "");
+  if (path.endsWith(bucketPath)) {
+    path = path.slice(0, -bucketPath.length);
+  }
+  if (!path || path === "/") {
+    return publicBase.origin;
+  }
+  return `${publicBase.origin}${path}`;
+}
+
+/** S3Client 싱글톤 — dev HMR 시 globalThis 캐싱 (서버 → MinIO 내부 통신) */
 export function getS3Client(): S3Client {
   if (!globalForS3.s3Client) {
     globalForS3.s3Client = new S3Client({
@@ -26,6 +40,21 @@ export function getS3Client(): S3Client {
   return globalForS3.s3Client;
 }
 
+function getS3PresignClient(): S3Client {
+  if (!globalForS3.s3PresignClient) {
+    globalForS3.s3PresignClient = new S3Client({
+      endpoint: getS3PresignEndpoint(),
+      region: env.S3_REGION,
+      credentials: {
+        accessKeyId: env.S3_ACCESS_KEY_ID,
+        secretAccessKey: env.S3_SECRET_ACCESS_KEY,
+      },
+      forcePathStyle: env.S3_FORCE_PATH_STYLE,
+    });
+  }
+  return globalForS3.s3PresignClient;
+}
+
 export async function createPresignedPutUrl(
   key: string,
   contentType: string,
@@ -38,7 +67,7 @@ export async function createPresignedPutUrl(
     ContentType: contentType,
     ContentLength: size,
   });
-  return getSignedUrl(getS3Client(), command, { expiresIn: expiresInSeconds });
+  return getSignedUrl(getS3PresignClient(), command, { expiresIn: expiresInSeconds });
 }
 
 export async function headObject(key: string) {

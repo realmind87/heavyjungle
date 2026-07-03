@@ -51,6 +51,7 @@ const ALLOWED_STYLE_PROPS = new Set([
   "font-weight",
   "font-style",
   "text-align",
+  "padding-left",
   "display",
   "margin-left",
   "margin-right",
@@ -70,6 +71,12 @@ function isAllowedHref(href: string): boolean {
 function isAllowedStyleValue(prop: string, val: string): boolean {
   const normalized = val.trim().toLowerCase();
   if (prop === "display") return normalized === "block";
+  if (prop === "padding-left") {
+    const emMatch = normalized.match(/^([\d.]+)em$/);
+    if (!emMatch) return false;
+    const em = Number.parseFloat(emMatch[1]);
+    return Number.isFinite(em) && em >= 0 && em <= 10;
+  }
   if (prop === "margin-left" || prop === "margin-right") {
     return normalized === "auto" || normalized === "0" || normalized === "0px";
   }
@@ -92,6 +99,7 @@ function filterStyleValue(value: string, tagName: string): string {
 
       if (!ALLOWED_STYLE_PROPS.has(prop)) return null;
       if (MEDIA_ONLY_STYLE_PROPS.has(prop) && !isMedia) return null;
+      if (prop === "padding-left" && isMedia) return null;
       if (!isAllowedStyleValue(prop, val)) return null;
       if (/url\(|expression\(|javascript:/i.test(val)) return null;
 

@@ -14,6 +14,7 @@ import {
   POST_VIDEO_MAX_BYTES,
 } from "@/features/uploads/constants";
 import { prepareEditorImage, prepareEditorMedia, useRichTextImageControls } from "@/lib/rich-text-editor-image";
+import { handleRichTextEditorKeyDown } from "@/lib/rich-text-editor-shortcuts";
 
 const FONT_SIZES = [
   { label: "작게", value: "14px" },
@@ -592,6 +593,49 @@ export function PostRichTextEditor({
     onInput();
   }, [editorRef, focusEditor, onInput]);
 
+  const applyBold = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    focusEditor();
+    restoreSavedSelection(savedRangeRef, editor);
+    toggleInlineTag("strong");
+    onInput();
+  }, [editorRef, focusEditor, onInput]);
+
+  const applyItalic = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    focusEditor();
+    restoreSavedSelection(savedRangeRef, editor);
+    toggleInlineTag("em");
+    onInput();
+  }, [editorRef, focusEditor, onInput]);
+
+  const applyStrikethrough = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    focusEditor();
+    restoreSavedSelection(savedRangeRef, editor);
+    toggleInlineTag("s");
+    onInput();
+  }, [editorRef, focusEditor, onInput]);
+
+  const handleEditorKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      const editor = editorRef.current;
+      if (!editor) return;
+
+      handleRichTextEditorKeyDown(event, editor, {
+        onBold: applyBold,
+        onItalic: applyItalic,
+        onStrikethrough: applyStrikethrough,
+        onLink: insertLink,
+        onInput,
+      });
+    },
+    [applyBold, applyItalic, applyStrikethrough, editorRef, insertLink, onInput],
+  );
+
   const applyAlign = useCallback(
     (align: "left" | "center" | "right") => {
       const editor = editorRef.current;
@@ -1117,6 +1161,7 @@ export function PostRichTextEditor({
           contentEditable
           suppressContentEditableWarning
           onInput={onInput}
+          onKeyDown={handleEditorKeyDown}
           className="min-h-[200px] font-sans text-base text-zinc-900 outline-none dark:text-zinc-100 [&_a]:break-all [&_a]:text-blue-600 [&_a]:underline dark:[&_a]:text-blue-400 [&_div]:min-h-[1.5em] [&_img]:my-2 [&_img]:max-h-96 [&_img]:max-w-full [&_img]:rounded-lg [&_img]:cursor-pointer [&_s]:line-through [&_strike]:line-through [&_del]:line-through [&_video]:my-3 [&_video]:max-h-[32rem] [&_video]:max-w-full [&_video]:rounded-lg [&_video]:cursor-pointer [&_iframe]:my-3 [&_iframe]:aspect-video [&_iframe]:w-full [&_iframe]:max-w-full [&_iframe]:rounded-lg [&_img.editor-image-selected]:outline [&_img.editor-image-selected]:outline-2 [&_img.editor-image-selected]:outline-blue-500 [&_img.editor-image-selected]:outline-offset-2 [&_video.editor-image-selected]:outline [&_video.editor-image-selected]:outline-2 [&_video.editor-image-selected]:outline-blue-500 [&_video.editor-image-selected]:outline-offset-2"
         />
         {selectedImage && deleteButtonPosition && (
@@ -1146,14 +1191,7 @@ export function PostRichTextEditor({
         <ToolbarButton
           label="굵게"
           onPointerDown={saveSelection}
-          onClick={() => {
-            const editor = editorRef.current;
-            if (!editor) return;
-            focusEditor();
-            restoreSavedSelection(savedRangeRef, editor);
-            toggleInlineTag("strong");
-            onInput();
-          }}
+          onClick={applyBold}
         >
           <span className="font-bold">B</span>
         </ToolbarButton>
@@ -1161,14 +1199,7 @@ export function PostRichTextEditor({
         <ToolbarButton
           label="기울임"
           onPointerDown={saveSelection}
-          onClick={() => {
-            const editor = editorRef.current;
-            if (!editor) return;
-            focusEditor();
-            restoreSavedSelection(savedRangeRef, editor);
-            toggleInlineTag("em");
-            onInput();
-          }}
+          onClick={applyItalic}
         >
           <span className="italic">I</span>
         </ToolbarButton>
@@ -1176,14 +1207,7 @@ export function PostRichTextEditor({
         <ToolbarButton
           label="취소선"
           onPointerDown={saveSelection}
-          onClick={() => {
-            const editor = editorRef.current;
-            if (!editor) return;
-            focusEditor();
-            restoreSavedSelection(savedRangeRef, editor);
-            toggleInlineTag("s");
-            onInput();
-          }}
+          onClick={applyStrikethrough}
         >
           <span className="line-through">S</span>
         </ToolbarButton>

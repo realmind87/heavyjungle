@@ -31,8 +31,9 @@ services:
       S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minioadmin}
       S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
       S3_BUCKET: uploads
-      # 브라우저 presigned PUT + 공개 읽기 — Cloudflare 터널로 minio:9000 노출 필요
-      S3_PUBLIC_URL: ${S3_PUBLIC_URL:-http://localhost:9000/uploads}
+      # 브라우저 presigned PUT + 공개 읽기 — HTTPS 공개 URL 필수 (예: https://s3.heavyjungle.com/uploads)
+      S3_PUBLIC_URL: ${S3_PUBLIC_URL:-https://s3.heavyjungle.com/uploads}
+      NEXT_PUBLIC_S3_PUBLIC_URL: ${S3_PUBLIC_URL:-https://s3.heavyjungle.com/uploads}
       S3_FORCE_PATH_STYLE: "true"
     depends_on:
       postgres:
