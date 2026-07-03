@@ -58,7 +58,7 @@ export async function CommentSection({ postId, user }: CommentSectionProps) {
         {serialized.length === 0 ? (
           <div className="mt-10">
             <p className={`text-center text-xl font-bold text-black dark:text-white`}>첫 번째 댓글을 남겨 보세요</p>
-            <p className={`mt-4 text-center`}>게시물에 아직 댓글이 달리지 않았습니다.</p>
+            <p className={`mt-4 text-center ${mutedTextClass}`}>게시물에 아직 댓글이 달리지 않았습니다.</p>
           </div>
         ) : (
           serialized.map((thread) => (

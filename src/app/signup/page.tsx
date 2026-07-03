@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { SiteHeader } from "@/components/layout/site-header";
 import { AuthForm } from "@/components/auth/auth-form";
 import { signUp } from "@/features/auth/actions";
@@ -23,6 +24,12 @@ export default function SignUpPage() {
           <input name="password" type="password" required autoComplete="new-password" className={inputClass} />
         </label>
       </AuthForm>
+      <p className="mt-4 text-center text-sm text-zinc-500 dark:text-zinc-400">
+        이미 계정이 있으신가요?{" "}
+        <Link href="/login" className="text-zinc-900 underline dark:text-zinc-100">
+          로그인
+        </Link>
+      </p>
     </main>
     </div>
   );

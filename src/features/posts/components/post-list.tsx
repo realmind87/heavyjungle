@@ -134,7 +134,10 @@ export function PostList({ posts, listState, showToolbar = true }: PostListProps
   );
 
   const returnListState = useMemo(
-    () => (isUrlSynced && listState ? { sort: listState.sort, view: listState.view } : undefined),
+    () =>
+      isUrlSynced && listState
+        ? { sort: listState.sort, view: listState.view, feed: listState.feed }
+        : undefined,
     [isUrlSynced, listState],
   );
 
@@ -144,12 +147,17 @@ export function PostList({ posts, listState, showToolbar = true }: PostListProps
       buildPostListHref({
         sort: next.sort ?? listState.sort,
         view: next.view ?? listState.view,
+        feed: listState.feed,
       }),
     );
   }
 
   if (posts.length === 0) {
-    return <p className={`py-8 text-center ${mutedTextClass}`}>글이 없습니다.</p>;
+    const emptyMessage =
+      listState?.feed === "following"
+        ? "팔로우한 회원의 글이 없습니다."
+        : "글이 없습니다.";
+    return <p className={`py-8 text-center ${mutedTextClass}`}>{emptyMessage}</p>;
   }
 
   return (

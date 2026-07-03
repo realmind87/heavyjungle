@@ -74,7 +74,7 @@ function UserRoleForm({ user, currentUserId }: { user: AdminUserListItem; curren
         name="role"
         defaultValue={user.role}
         disabled={pending || isSelf}
-        className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm dark:border-zinc-600 dark:bg-zinc-950"
+        className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm text-zinc-900 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-50"
       >
         <option value="user">일반</option>
         <option value="admin">관리자</option>
@@ -83,7 +83,7 @@ function UserRoleForm({ user, currentUserId }: { user: AdminUserListItem; curren
         {pending ? "저장 중..." : "저장"}
       </button>
       {state.error && <p className={errorTextClass}>{state.error}</p>}
-      {isSelf && <span className="text-xs text-zinc-500">본인</span>}
+      {isSelf && <span className="text-xs text-zinc-500 dark:text-zinc-400">본인</span>}
     </form>
   );
 }
@@ -91,7 +91,7 @@ function UserRoleForm({ user, currentUserId }: { user: AdminUserListItem; curren
 function PostsTable({ posts }: { posts: AdminPostListItem[] }) {
   return (
     <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-700">
-      <table className="min-w-full text-sm">
+      <table className="min-w-full text-sm text-zinc-900 dark:text-zinc-100">
         <thead className="bg-zinc-50 text-left text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
           <tr>
             <th className="px-3 py-2 font-medium">제목</th>
@@ -104,7 +104,7 @@ function PostsTable({ posts }: { posts: AdminPostListItem[] }) {
         <tbody>
           {posts.length === 0 ? (
             <tr>
-              <td colSpan={5} className="px-3 py-8 text-center text-zinc-500">
+              <td colSpan={5} className="px-3 py-8 text-center text-zinc-500 dark:text-zinc-400">
                 글이 없습니다.
               </td>
             </tr>
@@ -134,7 +134,7 @@ function PostsTable({ posts }: { posts: AdminPostListItem[] }) {
 function CommentsTable({ comments }: { comments: AdminCommentListItem[] }) {
   return (
     <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-700">
-      <table className="min-w-full text-sm">
+      <table className="min-w-full text-sm text-zinc-900 dark:text-zinc-100">
         <thead className="bg-zinc-50 text-left text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
           <tr>
             <th className="px-3 py-2 font-medium">내용</th>
@@ -147,7 +147,7 @@ function CommentsTable({ comments }: { comments: AdminCommentListItem[] }) {
         <tbody>
           {comments.length === 0 ? (
             <tr>
-              <td colSpan={5} className="px-3 py-8 text-center text-zinc-500">
+              <td colSpan={5} className="px-3 py-8 text-center text-zinc-500 dark:text-zinc-400">
                 댓글이 없습니다.
               </td>
             </tr>
@@ -183,7 +183,7 @@ function UsersTable({
 }) {
   return (
     <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-700">
-      <table className="min-w-full text-sm">
+      <table className="min-w-full text-sm text-zinc-900 dark:text-zinc-100">
         <thead className="bg-zinc-50 text-left text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
           <tr>
             <th className="px-3 py-2 font-medium">아이디</th>
@@ -195,7 +195,7 @@ function UsersTable({
         <tbody>
           {users.length === 0 ? (
             <tr>
-              <td colSpan={4} className="px-3 py-8 text-center text-zinc-500">
+              <td colSpan={4} className="px-3 py-8 text-center text-zinc-500 dark:text-zinc-400">
                 사용자가 없습니다.
               </td>
             </tr>

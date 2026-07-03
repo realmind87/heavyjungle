@@ -4,16 +4,27 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getPostById } from "@/features/posts/queries";
-import { createPostFormSchema, updatePostSchema } from "@/features/posts/validators";
+import {
+  createPostFormSchema,
+  postCategorySchema,
+  updatePostSchema,
+  type PostCategory,
+} from "@/features/posts/validators";
 import { isPostHtmlEmpty } from "@/lib/sanitize-post-html";
 import { sanitizePostHtml } from "@/lib/sanitize-post-html.server";
-import { canModifyPost, requireUser } from "@/server/auth/permissions";
+import { canModifyPost, isAdmin, requireUser } from "@/server/auth/permissions";
 import { db } from "@/server/db";
 import { posts } from "@/server/db/schema";
 
 export type PostActionState = {
   error?: string;
 };
+
+function resolvePostCategory(raw: FormDataEntryValue | null, userIsAdmin: boolean): PostCategory {
+  if (!userIsAdmin) return "general";
+  const parsed = postCategorySchema.safeParse(raw ?? "general");
+  return parsed.success ? parsed.data : "general";
+}
 
 export async function createPost(
   _prevState: PostActionState,
@@ -24,9 +35,13 @@ export async function createPost(
     return { error: "로그인이 필요합니다." };
   }
 
+  const userIsAdmin = isAdmin(user);
+  const category = resolvePostCategory(formData.get("category"), userIsAdmin);
+
   const parsed = createPostFormSchema.safeParse({
     title: formData.get("title"),
     content: formData.get("content"),
+    category,
   });
 
   if (!parsed.success) {
@@ -40,9 +55,13 @@ export async function createPost(
     return { error: "내용을 입력하세요." };
   }
 
+  if (category === "notice" && !userIsAdmin) {
+    return { error: "공지사항은 관리자만 등록할 수 있습니다." };
+  }
+
   const [post] = await db
     .insert(posts)
-    .values({ authorId: user.id, title, content })
+    .values({ authorId: user.id, title, content, category })
     .returning({ id: posts.id });
 
   revalidatePath("/");
@@ -58,10 +77,14 @@ export async function updatePost(
     return { error: "로그인이 필요합니다." };
   }
 
+  const userIsAdmin = isAdmin(user);
+  const category = resolvePostCategory(formData.get("category"), userIsAdmin);
+
   const parsed = updatePostSchema.safeParse({
     postId: formData.get("postId"),
     title: formData.get("title"),
     content: formData.get("content"),
+    category,
   });
 
   if (!parsed.success) {
@@ -85,9 +108,16 @@ export async function updatePost(
     return { error: "수정 권한이 없습니다." };
   }
 
+  if (category === "notice" && !userIsAdmin) {
+    return { error: "공지사항은 관리자만 설정할 수 있습니다." };
+  }
+
+  // 비관리자가 수정하면 기존 분류 유지 (공지를 일반으로 강등하지 않음)
+  const nextCategory = userIsAdmin ? category : post.category;
+
   await db
     .update(posts)
-    .set({ title, content })
+    .set({ title, content, category: nextCategory })
     .where(eq(posts.id, postId));
 
   revalidatePath(`/posts/${postId}`);

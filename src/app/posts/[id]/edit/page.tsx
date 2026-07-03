@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { SiteHeader } from "@/components/layout/site-header";
 import { PostForm } from "@/features/posts/components/post-form";
 import { getPostById } from "@/features/posts/queries";
-import { canModifyPost } from "@/server/auth/permissions";
+import { canModifyPost, isAdmin } from "@/server/auth/permissions";
 import { getCurrentUser } from "@/server/auth/current-user";
 import { linkMutedClass } from "@/lib/ui-classes";
 
@@ -32,7 +32,9 @@ export default async function PostEditPage({ params }: PageProps) {
             postId={postId}
             initialTitle={post.title}
             initialContent={post.content}
+            initialCategory={post.category}
             cancelHref={`/posts/${postId}`}
+            isAdmin={isAdmin(user)}
           />
         </div>
       </main>

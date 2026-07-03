@@ -2,10 +2,11 @@ import Link from "next/link";
 import type { PostListItem } from "@/features/posts/queries";
 import { buildPostDetailHref, type PostListUiState } from "@/features/posts/post-list-state";
 import { ProfileAuthorLink } from "@/features/profile/components/ProfileAuthorLink";
+import { PostCoverPreview } from "@/features/posts/components/post-cover-preview";
 
 type PostThumbnailCardProps = {
   post: PostListItem;
-  returnListState?: Pick<PostListUiState, "sort" | "view">;
+  returnListState?: Pick<PostListUiState, "sort" | "view" | "feed">;
 };
 
 function NoImageIcon() {
@@ -27,23 +28,6 @@ function NoImageIcon() {
   );
 }
 
-function VideoIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      className="h-10 w-10"
-      aria-hidden="true"
-    >
-      <rect x="3" y="5" width="14" height="14" rx="2" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="m17 10 4-2v8l-4-2z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="m9 9 4 3-4 3z" />
-    </svg>
-  );
-}
-
 /** 썸네일 그리드용 글 카드 */
 export function PostThumbnailCard({ post, returnListState }: PostThumbnailCardProps) {
   const postHref = returnListState
@@ -51,23 +35,17 @@ export function PostThumbnailCard({ post, returnListState }: PostThumbnailCardPr
     : `/posts/${post.id}`;
 
   return (
-    <article className="flex h-full flex-col overflow-hidden rounded-xl border border-zinc-200 transition hover:border-zinc-300 hover:shadow-sm dark:border-zinc-800 dark:hover:border-zinc-700">
+    <article className="flex h-full flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white transition hover:border-zinc-300 hover:shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700">
       <Link href={postHref} className="block">
-        <div className="flex aspect-video px-3 py-3 w-full items-center justify-center">
-          {post.coverImageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element -- 글 본문 대표 이미지
-            <img
-              src={post.coverImageUrl}
-              alt=""
-              className="h-full w-full object-cover"
+        <div className="flex aspect-video w-full items-center justify-center px-3 py-3">
+          {post.coverType ? (
+            <PostCoverPreview
+              coverImageUrl={post.coverImageUrl}
+              coverType={post.coverType}
+              className="h-full w-full rounded-xl"
             />
-          ) : post.coverType === "video" || post.coverType === "youtube" ? (
-            <div className="flex flex-col w-full h-full rounded-xl items-center justify-center gap-1 text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-800/80">
-              <VideoIcon />
-              <span className="text-xs">동영상</span>
-            </div>
           ) : (
-            <div className="flex flex-col w-full h-full rounded-xl items-center justify-center gap-1 text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-800/80">
+            <div className="flex h-full w-full flex-col items-center justify-center gap-1 rounded-xl bg-zinc-100 text-zinc-400 dark:bg-zinc-800/80 dark:text-zinc-500">
               <NoImageIcon />
               <span className="text-xs">이미지 없음</span>
             </div>

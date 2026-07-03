@@ -2,11 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { LoginModal } from "@/components/auth/login-modal";
 import { SignUpModal } from "@/components/auth/signup-modal";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { signOut } from "@/features/auth/actions";
-import { useThemeMode } from "@/hooks/use-theme-mode";
+import { SearchBar } from "@/features/search/components/search-bar";
 
 type HeaderUser = {
   username: string;
@@ -34,7 +35,6 @@ function ProfileMenu({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const { isDark, setThemeMode } = useThemeMode();
   const showUsername = displayName !== username;
 
   useEffect(() => {
@@ -50,13 +50,6 @@ function ProfileMenu({
 
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
-
-  const selectTheme = useCallback(
-    (mode: "light" | "dark") => {
-      setThemeMode(mode);
-    },
-    [setThemeMode],
-  );
 
   return (
     <div ref={menuRef} className="relative">
@@ -123,26 +116,6 @@ function ProfileMenu({
                 관리자
               </Link>
             )}
-
-            <div className="flex items-center justify-between gap-3 rounded-lg px-3 py-2">
-              <span className="text-sm text-zinc-700 dark:text-zinc-300">
-                {isDark ? "다크 모드" : "라이트 모드"}
-              </span>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={isDark}
-                aria-label="다크 모드 토글"
-                onClick={() => selectTheme(isDark ? "light" : "dark")}
-                className={`relative h-7 w-12 shrink-0 rounded-full ${isDark ? "bg-zinc-700" : "bg-zinc-300"
-                  }`}
-              >
-                <span
-                  className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform duration-200 ${isDark ? "translate-x-5" : "translate-x-0"
-                    }`}
-                />
-              </button>
-            </div>
 
             <form action={signOut}>
               <button
@@ -216,19 +189,31 @@ export function Header({ user }: HeaderProps) {
   return (
     <>
       <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white/90 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
-        <div className="mx-auto flex h-15 max-w-6xl items-center justify-between px-4 sm:px-6">
+        <div className="mx-auto flex h-15 items-center justify-between gap-3 px-4 sm:gap-4 sm:px-6">
           <Link href="/" className="inline-flex shrink-0 items-center" aria-label="Heavy Jungle 홈">
             <Image
               src="/logo/logo.png"
               alt="Heavy Jungle"
               width={1019}
               height={210}
-              className="h-8 w-auto sm:h-9"
+              className="h-8 w-auto sm:h-9 dark:hidden"
+              priority
+            />
+            <Image
+              src="/logo/logo_dark.png"
+              alt="Heavy Jungle"
+              width={1019}
+              height={210}
+              className="hidden h-8 w-auto sm:h-9 dark:block"
               priority
             />
           </Link>
 
-          <div className="flex items-center gap-5 sm:gap-2">
+          <SearchBar className="mx-3 min-w-0 max-w-xl flex-1 sm:mx-4" />
+
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            <ThemeToggle />
+
             <AuthButtons
               className="hidden md:flex"
               user={user}

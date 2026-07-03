@@ -2,6 +2,7 @@
 
 import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { isEitherBlocked } from "@/features/blocks/queries";
 import { createCommentSchema, deleteCommentSchema } from "@/features/comments/validators";
 import { getPostById } from "@/features/posts/queries";
 import { isCommentHtmlEmpty } from "@/lib/sanitize-comment-html";
@@ -12,6 +13,7 @@ import { comments, posts } from "@/server/db/schema";
 
 export type CommentActionState = {
   error?: string;
+  success?: boolean;
 };
 
 export async function createComment(
@@ -43,6 +45,10 @@ export async function createComment(
   const post = await getPostById(postId);
   if (!post || post.isDeleted) {
     return { error: "글을 찾을 수 없습니다." };
+  }
+
+  if (await isEitherBlocked(user.id, post.author.id)) {
+    return { error: "차단된 사용자와는 댓글을 주고받을 수 없습니다." };
   }
 
   try {
@@ -94,7 +100,7 @@ export async function createComment(
   }
 
   revalidatePath(`/posts/${postId}`);
-  return {};
+  return { success: true };
 }
 
 export async function deleteComment(

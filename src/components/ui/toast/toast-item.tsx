@@ -11,7 +11,7 @@ const variantStyles: Record<ToastVariant, string> = {
 };
 
 const iconStyles: Record<ToastVariant, string> = {
-  default: "text-zinc-500",
+  default: "text-zinc-500 dark:text-zinc-400",
   success: "text-emerald-600 dark:text-emerald-400",
   error: "text-red-600 dark:text-red-400",
   info: "text-blue-600 dark:text-blue-400",

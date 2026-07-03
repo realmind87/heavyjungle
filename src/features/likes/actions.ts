@@ -2,6 +2,7 @@
 
 import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
+import { isEitherBlocked } from "@/features/blocks/queries";
 import { getPostById } from "@/features/posts/queries";
 import { requireUser } from "@/server/auth/permissions";
 import { db } from "@/server/db";
@@ -32,6 +33,10 @@ export async function toggleLike(postId: string): Promise<ToggleLikeResult> {
   const post = await getPostById(postId);
   if (!post || post.isDeleted) {
     return { error: "글을 찾을 수 없습니다." };
+  }
+
+  if (await isEitherBlocked(user.id, post.author.id)) {
+    return { error: "차단된 사용자의 글에는 좋아요할 수 없습니다." };
   }
 
   try {

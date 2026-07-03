@@ -12,6 +12,7 @@ type CommentComposerProps = {
   placeholder?: string;
   submitLabel?: string;
   onCancel?: () => void;
+  onSuccess?: () => void;
   autoFocus?: boolean;
   compact?: boolean;
 };
@@ -23,6 +24,7 @@ export function CommentComposer({
   placeholder = "댓글을 입력하세요",
   submitLabel = "등록",
   onCancel,
+  onSuccess,
   autoFocus = false,
   compact = false,
 }: CommentComposerProps) {
@@ -44,6 +46,17 @@ export function CommentComposer({
     if (!state.error) return;
     syncContent();
   }, [state.error]);
+
+  useEffect(() => {
+    if (!state.success) return;
+
+    const editor = editorRef.current;
+    const input = contentInputRef.current;
+    if (editor) editor.innerHTML = "";
+    if (input) input.value = "";
+    setIsEmpty(true);
+    onSuccess?.();
+  }, [state.success, onSuccess]);
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     syncContent();

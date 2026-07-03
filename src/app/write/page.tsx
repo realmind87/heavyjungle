@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/layout/site-header";
 import { PostForm } from "@/features/posts/components/post-form";
 import { getCurrentUser } from "@/server/auth/current-user";
+import { isAdmin } from "@/server/auth/permissions";
 import { linkMutedClass } from "@/lib/ui-classes";
 
 export default async function WritePage() {
@@ -17,7 +18,7 @@ export default async function WritePage() {
           ← 홈
         </Link>
         <div className="mt-6">
-          <PostForm mode="create" />
+          <PostForm mode="create" isAdmin={isAdmin(user)} />
         </div>
       </main>
     </div>

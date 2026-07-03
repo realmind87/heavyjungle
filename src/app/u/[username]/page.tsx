@@ -1,8 +1,11 @@
 import { notFound } from "next/navigation";
 import { SiteHeader } from "@/components/layout/site-header";
+import { getBlockRelation, listBlockedUsers } from "@/features/blocks/queries";
+import { ProfileFollowSection } from "@/features/follows/components/profile-follow-section";
+import { getFollowStats, isFollowingUser } from "@/features/follows/queries";
 import { PostList } from "@/features/posts/components/post-list";
-import { ProfileActionLinks } from "@/features/profile/components/ProfileActionLinks";
 import { ProfileAvatar } from "@/features/profile/components/ProfileAvatar";
+import { ProfileSettingsMenu } from "@/features/profile/components/ProfileSettingsMenu";
 import { UserPostsLoadMore } from "@/features/profile/components/UserPostsLoadMore";
 import { getPublicProfileByUsername, getUserPosts } from "@/features/profile/queries";
 import { getCurrentUser } from "@/server/auth/current-user";
@@ -27,7 +30,26 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
   if (!profile) notFound();
 
   const isOwner = currentUser?.username === profile.username;
-  const postsPage = await getUserPosts(profile.id, { cursor, limit: 20 });
+  const blockRelation =
+    currentUser && !isOwner
+      ? await getBlockRelation(currentUser.id, profile.id)
+      : { isBlocking: false, isBlockedBy: false };
+
+  const isBlockedRelation = blockRelation.isBlocking || blockRelation.isBlockedBy;
+  const canViewContent = isOwner || !isBlockedRelation;
+
+  const [postsPage, followStats, isFollowing, blockedUsers] = await Promise.all([
+    canViewContent
+      ? getUserPosts(profile.id, { cursor, limit: 20 })
+      : Promise.resolve({ items: [], nextCursor: null, hasMore: false }),
+    canViewContent
+      ? getFollowStats(profile.id)
+      : Promise.resolve({ followerCount: 0, followingCount: 0 }),
+    currentUser && !isOwner && !isBlockedRelation
+      ? isFollowingUser(currentUser.id, profile.id)
+      : Promise.resolve(false),
+    isOwner && currentUser ? listBlockedUsers(currentUser.id) : Promise.resolve([]),
+  ]);
   const displayName = profile.displayName ?? profile.username;
 
   return (
@@ -37,45 +59,71 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
         <div className="flex items-start gap-4">
           <ProfileAvatar
             name={displayName}
-            avatarUrl={resolveStoragePublicUrl(profile.avatarUrl)}
+            avatarUrl={canViewContent ? resolveStoragePublicUrl(profile.avatarUrl) : null}
             size="lg"
           />
           <div className="min-w-0 flex-1">
-            <h1 className={pageTitleClass}>{displayName}</h1>
-            <p className={mutedTextClass}>@{profile.username}</p>
-            {profile.bio && (
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h1 className={pageTitleClass}>{displayName}</h1>
+                <p className={mutedTextClass}>@{profile.username}</p>
+              </div>
+              <ProfileSettingsMenu
+                username={profile.username}
+                targetUserId={profile.id}
+                isOwner={isOwner}
+                hasPassword={!!currentUser?.passwordHash}
+                isLoggedIn={!!currentUser}
+                isBlocking={blockRelation.isBlocking}
+                likesReceived={canViewContent ? profile.stats.likesReceived : 0}
+                createdAt={profile.createdAt.toISOString()}
+                blockedUsers={blockedUsers}
+              />
+            </div>
+
+            {blockRelation.isBlocking && (
+              <p className="mt-3 rounded-lg bg-zinc-100 px-3 py-2 text-sm text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+                차단한 사용자입니다. 설정에서 차단을 해제할 수 있습니다.
+              </p>
+            )}
+
+            {blockRelation.isBlockedBy && !blockRelation.isBlocking && (
+              <p className="mt-3 rounded-lg bg-zinc-100 px-3 py-2 text-sm text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+                이 프로필을 볼 수 없습니다.
+              </p>
+            )}
+
+            {canViewContent && profile.bio && (
               <p className="mt-3 whitespace-pre-wrap text-sm text-zinc-700 dark:text-zinc-300">
                 {profile.bio}
               </p>
             )}
-            <div className={`mt-3 flex flex-wrap gap-4 ${mutedTextClass}`}>
-              <span>글 {profile.stats.postCount}</span>
-              <span>받은 좋아요 {profile.stats.likesReceived}</span>
-              <span>
-                가입일{" "}
-                {profile.createdAt.toLocaleDateString("ko-KR", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </span>
-            </div>
 
-            {isOwner && currentUser && (
-              <div className="mt-4">
-                <ProfileActionLinks username={profile.username} hasPassword={!!currentUser.passwordHash} />
-              </div>
+            {canViewContent && (
+              <ProfileFollowSection
+                username={profile.username}
+                targetUserId={profile.id}
+                postCount={profile.stats.postCount}
+                initialFollowing={isFollowing}
+                initialFollowerCount={followStats.followerCount}
+                followingCount={followStats.followingCount}
+                isOwner={isOwner}
+                isLoggedIn={!!currentUser}
+                isBlockedRelation={isBlockedRelation}
+              />
             )}
           </div>
         </div>
 
-        <section className="mt-12">
-          <h2 className={sectionTitleClass}>작성 글</h2>
-          <div className="mt-4">
-            <PostList posts={postsPage.items} />
-            <UserPostsLoadMore username={profile.username} nextCursor={postsPage.nextCursor} />
-          </div>
-        </section>
+        {canViewContent ? (
+          <section className="mt-12">
+            <h2 className={sectionTitleClass}>작성 글</h2>
+            <div className="mt-4">
+              <PostList posts={postsPage.items} />
+              <UserPostsLoadMore username={profile.username} nextCursor={postsPage.nextCursor} />
+            </div>
+          </section>
+        ) : null}
       </main>
     </div>
   );

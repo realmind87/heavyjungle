@@ -115,7 +115,7 @@ export function SignUpModal({ isOpen, onClose, onSwitchToLogin, next }: SignUpMo
           </button>
 
           {onSwitchToLogin && (
-            <p className="mt-4 text-center text-sm text-zinc-500">
+            <p className="mt-4 text-center text-sm text-zinc-500 dark:text-zinc-400">
               이미 계정이 있으신가요?{" "}
               <button type="button" onClick={onSwitchToLogin} className="text-zinc-900 underline dark:text-zinc-100">
                 로그인

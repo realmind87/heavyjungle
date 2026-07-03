@@ -383,7 +383,7 @@ function ToolbarButton({ label, onClick, onPointerDown, disabled, children }: To
         onPointerDown?.();
       }}
       onClick={onClick}
-      className="inline-flex h-8 w-8 items-center justify-center rounded-md border-zinc-200 bg-white text-sm text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-sm text-zinc-700 transition hover:bg-zinc-100 disabled:opacity-50 dark:text-zinc-200 dark:hover:bg-zinc-800"
     >
       {children}
     </button>
@@ -433,7 +433,7 @@ function FontSizePicker({ onBeforeOpen, onSelect }: FontSizePickerProps) {
           fill="none"
           stroke="currentColor"
           strokeWidth="2"
-          className={`h-3.5 w-3.5 shrink-0 text-zinc-500 transition ${isOpen ? "rotate-180" : ""}`}
+          className={`h-3.5 w-3.5 shrink-0 text-zinc-500 transition dark:text-zinc-400 ${isOpen ? "rotate-180" : ""}`}
           aria-hidden="true"
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
@@ -1035,7 +1035,7 @@ export function PostRichTextEditor({
       : 0;
 
   return (
-    <div className="bg-white dark:border-zinc-700 dark:bg-zinc-900">
+    <div className="rounded-lg bg-white dark:bg-zinc-900">
 
 
       <div className="relative">
@@ -1229,7 +1229,7 @@ export function PostRichTextEditor({
 
         <div className="flex items-center gap-1">
           <label
-            className="relative inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-md dark:border-zinc-700"
+            className="relative inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-md text-zinc-700 transition hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800"
             onMouseDown={(event) => {
               preventToolbarBlur(event);
               saveSelection();
@@ -1241,7 +1241,7 @@ export function PostRichTextEditor({
               className="absolute inset-0 cursor-pointer opacity-0"
               onChange={(event) => applyColor(event.target.value)}
             />
-            <svg viewBox="0 0 24 24" className="h-4 w-4 text-zinc-500" aria-hidden="true">
+            <svg viewBox="0 0 24 24" className="h-4 w-4 text-zinc-500 dark:text-zinc-400" aria-hidden="true">
               <path
                 fill="currentColor"
                 d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8z"

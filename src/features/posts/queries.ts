@@ -3,8 +3,11 @@
  */
 import "server-only";
 
-import { and, asc, desc, eq, gt, lt, or } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, lt, notInArray, or, type SQL } from "drizzle-orm";
+import { getHiddenUserIdsForViewer } from "@/features/blocks/queries";
+import { getFollowingUserIds } from "@/features/follows/queries";
 import type { CursorPage } from "@/lib/cursor";
+import type { PostListFeed } from "@/features/posts/post-list-state";
 import { postListQuerySchema } from "@/features/posts/validators";
 import {
   decodePostCursor,
@@ -128,19 +131,36 @@ function buildCursorPageForSort(rows: PostRow[], limit: number, sort: PostSort):
   return { items, nextCursor, hasMore };
 }
 
-async function fetchPostRows(sort: PostSort, cursor: PostCursor | null, limit: number) {
-  const baseWhere = eq(posts.isDeleted, false);
+async function fetchPostRows(
+  sort: PostSort,
+  cursor: PostCursor | null,
+  limit: number,
+  options: {
+    hiddenAuthorIds?: string[];
+    authorIds?: string[];
+    /** 기본: 일반 게시글만 (공지는 aside 전용) */
+    category?: "general" | "notice";
+  } = {},
+) {
+  const filters: SQL[] = [eq(posts.isDeleted, false)];
+  filters.push(eq(posts.category, options.category ?? "general"));
+  if (options.hiddenAuthorIds && options.hiddenAuthorIds.length > 0) {
+    filters.push(notInArray(posts.authorId, options.hiddenAuthorIds));
+  }
+  if (options.authorIds) {
+    filters.push(inArray(posts.authorId, options.authorIds));
+  }
 
   if (sort === "popular") {
     const popularCursor = cursor?.sort === "popular" ? cursor : null;
     const cursorFilter = buildPopularCursorFilter(popularCursor);
-    const whereClause = cursorFilter ? and(baseWhere, cursorFilter) : baseWhere;
+    if (cursorFilter) filters.push(cursorFilter);
 
     return db
       .select(postListSelect)
       .from(posts)
       .innerJoin(users, eq(posts.authorId, users.id))
-      .where(whereClause)
+      .where(and(...filters))
       .orderBy(desc(posts.likeCount), desc(posts.id))
       .limit(limit + 1);
   }
@@ -148,37 +168,68 @@ async function fetchPostRows(sort: PostSort, cursor: PostCursor | null, limit: n
   if (sort === "oldest") {
     const oldestCursor = cursor?.sort === "oldest" ? cursor : null;
     const cursorFilter = buildOldestCursorFilter(oldestCursor);
-    const whereClause = cursorFilter ? and(baseWhere, cursorFilter) : baseWhere;
+    if (cursorFilter) filters.push(cursorFilter);
 
     return db
       .select(postListSelect)
       .from(posts)
       .innerJoin(users, eq(posts.authorId, users.id))
-      .where(whereClause)
+      .where(and(...filters))
       .orderBy(asc(posts.createdAt), asc(posts.id))
       .limit(limit + 1);
   }
 
   const latestCursor = cursor?.sort === "latest" ? cursor : null;
   const cursorFilter = buildLatestCursorFilter(latestCursor);
-  const whereClause = cursorFilter ? and(baseWhere, cursorFilter) : baseWhere;
+  if (cursorFilter) filters.push(cursorFilter);
 
   return db
     .select(postListSelect)
     .from(posts)
     .innerJoin(users, eq(posts.authorId, users.id))
-    .where(whereClause)
+    .where(and(...filters))
     .orderBy(desc(posts.createdAt), desc(posts.id))
     .limit(limit + 1);
 }
 
-/** 홈 글 목록 — 정렬·커서 페이지네이션 */
+/** 홈 글 목록 — 정렬·커서 페이지네이션 (차단 사용자 글 제외, 팔로우 피드 지원) */
 export async function listPosts(
-  options: { cursor?: string; limit?: number; sort?: PostSort } = {},
+  options: {
+    cursor?: string;
+    limit?: number;
+    sort?: PostSort;
+    feed?: PostListFeed;
+    viewerId?: string;
+  } = {},
 ): Promise<CursorPage<PostListItem>> {
   const { cursor: rawCursor, limit, sort } = postListQuerySchema.parse(options);
   const cursor = decodePostCursor(rawCursor, sort);
-  const rows = await fetchPostRows(sort, cursor, limit);
+  const feed = options.feed ?? "all";
+
+  if (feed === "following") {
+    if (!options.viewerId) {
+      return { items: [], nextCursor: null, hasMore: false };
+    }
+
+    const followingIds = await getFollowingUserIds(options.viewerId);
+    if (followingIds.length === 0) {
+      return { items: [], nextCursor: null, hasMore: false };
+    }
+
+    const hiddenAuthorIds = await getHiddenUserIdsForViewer(options.viewerId);
+    const authorIds = followingIds.filter((id) => !hiddenAuthorIds.includes(id));
+    if (authorIds.length === 0) {
+      return { items: [], nextCursor: null, hasMore: false };
+    }
+
+    const rows = await fetchPostRows(sort, cursor, limit, { authorIds });
+    return buildCursorPageForSort(rows, limit, sort);
+  }
+
+  const hiddenAuthorIds = options.viewerId
+    ? await getHiddenUserIdsForViewer(options.viewerId)
+    : [];
+  const rows = await fetchPostRows(sort, cursor, limit, { hiddenAuthorIds });
 
   return buildCursorPageForSort(rows, limit, sort);
 }
@@ -196,6 +247,7 @@ export async function getPostById(id: string) {
       id: posts.id,
       title: posts.title,
       content: posts.content,
+      category: posts.category,
       viewCount: posts.viewCount,
       likeCount: posts.likeCount,
       commentCount: posts.commentCount,
@@ -218,6 +270,7 @@ export async function getPostById(id: string) {
     id: row.id,
     title: row.title,
     content: row.content,
+    category: row.category,
     viewCount: row.viewCount,
     likeCount: row.likeCount,
     commentCount: row.commentCount,
@@ -231,4 +284,37 @@ export async function getPostById(id: string) {
       avatarUrl: row.authorAvatarUrl,
     },
   };
+}
+
+export type NoticeListItem = {
+  id: string;
+  title: string;
+  createdAt: Date;
+};
+
+/** 홈 aside 공지사항 — 최신순 최대 limit개 */
+export async function listNotices(limit = 5): Promise<NoticeListItem[]> {
+  return db
+    .select({
+      id: posts.id,
+      title: posts.title,
+      createdAt: posts.createdAt,
+    })
+    .from(posts)
+    .where(and(eq(posts.isDeleted, false), eq(posts.category, "notice")))
+    .orderBy(desc(posts.createdAt), desc(posts.id))
+    .limit(limit);
+}
+
+/** 공지사항 게시판 목록 — 최신순 커서 페이지네이션 */
+export async function listNoticePosts(
+  options: { cursor?: string; limit?: number } = {},
+): Promise<CursorPage<PostListItem>> {
+  const { cursor: rawCursor, limit } = postListQuerySchema.parse({
+    ...options,
+    sort: "latest",
+  });
+  const cursor = decodePostCursor(rawCursor, "latest");
+  const rows = await fetchPostRows("latest", cursor, limit, { category: "notice" });
+  return buildCursorPageForSort(rows, limit, "latest");
 }

@@ -55,6 +55,7 @@ function ReplyForm({ postId, parentId, onCancel }: ReplyFormProps) {
         placeholder="답글 작성"
         submitLabel="답글 달기"
         onCancel={onCancel}
+        onSuccess={onCancel}
         autoFocus
         compact
       />
@@ -113,7 +114,7 @@ export function CommentNode({ comment, postId, isLoggedIn, depth = 0 }: CommentN
     <div
       className={isNested ? "mt-2" : "mt-4"}
     >
-      <article className="rounded-lg bg-white p-3 dark:bg-zinc-900">
+      <article className="py-2 px-2">
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
             <ProfileAuthorLink

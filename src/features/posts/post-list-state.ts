@@ -12,9 +12,13 @@ import { parsePostSort, type PostSort } from "@/features/posts/post-sort";
 export const postViewSchema = z.enum(["list", "thumbnail"]);
 export type PostListView = z.infer<typeof postViewSchema>;
 
+export const postFeedSchema = z.enum(["all", "following"]);
+export type PostListFeed = z.infer<typeof postFeedSchema>;
+
 export type PostListUiState = {
   sort: PostSort;
   view: PostListView;
+  feed: PostListFeed;
   cursor?: string;
 };
 
@@ -23,14 +27,21 @@ export function parsePostView(value: string | undefined): PostListView {
   return parsed.success ? parsed.data : "list";
 }
 
+export function parsePostFeed(value: string | undefined): PostListFeed {
+  const parsed = postFeedSchema.safeParse(value);
+  return parsed.success ? parsed.data : "all";
+}
+
 export function parsePostListUiState(searchParams: {
   sort?: string;
   view?: string;
+  feed?: string;
   cursor?: string;
 }): PostListUiState {
   return {
     sort: parsePostSort(searchParams.sort),
     view: parsePostView(searchParams.view),
+    feed: parsePostFeed(searchParams.feed),
     cursor: searchParams.cursor,
   };
 }
@@ -38,6 +49,7 @@ export function parsePostListUiState(searchParams: {
 /** 홈 목록 URL 쿼리 문자열 (기본값은 생략) */
 export function buildPostListQuery(state: PostListUiState): string {
   const params = new URLSearchParams();
+  if (state.feed !== "all") params.set("feed", state.feed);
   if (state.sort !== "latest") params.set("sort", state.sort);
   if (state.view !== "list") params.set("view", state.view);
   if (state.cursor) params.set("cursor", state.cursor);
@@ -50,13 +62,15 @@ export function buildPostListHref(state: PostListUiState): string {
 }
 
 /** 글 상세 → 목록 복귀용 list 쿼리 (cursor 제외) */
-export function buildPostListReturnQuery(state: Pick<PostListUiState, "sort" | "view">): string {
+export function buildPostListReturnQuery(
+  state: Pick<PostListUiState, "sort" | "view" | "feed">,
+): string {
   return buildPostListQuery({ ...state, cursor: undefined });
 }
 
 export function buildPostDetailHref(
   postId: string,
-  listState: Pick<PostListUiState, "sort" | "view">,
+  listState: Pick<PostListUiState, "sort" | "view" | "feed">,
 ): string {
   const returnQuery = buildPostListReturnQuery(listState);
   const base = `/posts/${postId}`;
@@ -74,9 +88,11 @@ function sanitizeListQueryParam(raw: string | undefined): string | null {
 
   const params = new URLSearchParams(raw);
   const safe = new URLSearchParams();
+  const feed = parsePostFeed(params.get("feed") ?? undefined);
   const sort = parsePostSort(params.get("sort") ?? undefined);
   const view = parsePostView(params.get("view") ?? undefined);
 
+  if (feed !== "all") safe.set("feed", feed);
   if (sort !== "latest") safe.set("sort", sort);
   if (view !== "list") safe.set("view", view);
 

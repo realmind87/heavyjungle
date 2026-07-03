@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SiteHeader } from "@/components/layout/site-header";
 import { PostMetaChip } from "@/components/posts/post-meta-chip";
+import { isEitherBlocked } from "@/features/blocks/queries";
 import { CommentSection } from "@/features/comments/components/comment-section";
 import { LikeButton } from "@/features/likes/components/like-button";
 import { getUserLikeForPost } from "@/features/likes/queries";
@@ -42,12 +43,23 @@ function EditIcon() {
 export default async function PostDetailPage({ params, searchParams }: PageProps) {
   const { id: postId } = await params;
   const { list } = await searchParams;
-  const backHref = buildBackHrefFromListParam(list);
   const user = await getCurrentUser();
 
   const post = await getPostById(postId);
 
   if (!post || post.isDeleted) notFound();
+
+  if (user && (await isEitherBlocked(user.id, post.author.id))) {
+    notFound();
+  }
+
+  const backHref =
+    list != null
+      ? buildBackHrefFromListParam(list)
+      : post.category === "notice"
+        ? "/notices"
+        : "/";
+  const backLabel = post.category === "notice" && list == null ? "← 공지사항" : "← 목록으로";
 
   const liked = user ? await getUserLikeForPost(user.id, postId) : false;
   const canEdit = canModifyPost(user, post.author.id);
@@ -57,7 +69,7 @@ export default async function PostDetailPage({ params, searchParams }: PageProps
       <SiteHeader />
       <main className="mx-auto max-w-4xl px-4 py-8">
         <Link href={backHref} className={linkMutedClass}>
-          ← 목록으로
+          {backLabel}
         </Link>
 
         <article className="mt-6">

@@ -106,7 +106,7 @@ export function LoginModal({ isOpen, onClose, onSwitchToSignUp, next }: LoginMod
           </button>
 
           {onSwitchToSignUp && (
-            <p className="mt-4 text-center text-sm text-zinc-500">
+            <p className="mt-4 text-center text-sm text-zinc-500 dark:text-zinc-400">
               계정이 없으신가요?{" "}
               <button type="button" onClick={onSwitchToSignUp} className="text-zinc-900 underline dark:text-zinc-100">
                 회원가입

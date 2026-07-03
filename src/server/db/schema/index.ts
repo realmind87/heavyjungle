@@ -4,5 +4,7 @@ export * from "./sessions";
 export * from "./posts";
 export * from "./comments";
 export * from "./likes";
+export * from "./follows";
+export * from "./blocks";
 export * from "./password-reset-tokens";
 export * from "./relations";

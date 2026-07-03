@@ -1,5 +1,7 @@
 import { relations } from "drizzle-orm";
+import { blocks } from "./blocks";
 import { comments } from "./comments";
+import { follows } from "./follows";
 import { likes } from "./likes";
 import { posts } from "./posts";
 import { sessions } from "./sessions";
@@ -10,6 +12,10 @@ export const usersRelations = relations(users, ({ many }) => ({
   posts: many(posts),
   comments: many(comments),
   likes: many(likes),
+  followers: many(follows, { relationName: "userFollowers" }),
+  following: many(follows, { relationName: "userFollowing" }),
+  blockedUsers: many(blocks, { relationName: "userBlockedUsers" }),
+  blockedByUsers: many(blocks, { relationName: "userBlockedByUsers" }),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -53,5 +59,31 @@ export const likesRelations = relations(likes, ({ one }) => ({
   post: one(posts, {
     fields: [likes.postId],
     references: [posts.id],
+  }),
+}));
+
+export const followsRelations = relations(follows, ({ one }) => ({
+  follower: one(users, {
+    fields: [follows.followerId],
+    references: [users.id],
+    relationName: "userFollowing",
+  }),
+  following: one(users, {
+    fields: [follows.followingId],
+    references: [users.id],
+    relationName: "userFollowers",
+  }),
+}));
+
+export const blocksRelations = relations(blocks, ({ one }) => ({
+  blocker: one(users, {
+    fields: [blocks.blockerId],
+    references: [users.id],
+    relationName: "userBlockedUsers",
+  }),
+  blocked: one(users, {
+    fields: [blocks.blockedId],
+    references: [users.id],
+    relationName: "userBlockedByUsers",
   }),
 }));

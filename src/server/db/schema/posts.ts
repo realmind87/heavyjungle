@@ -1,5 +1,8 @@
-import { boolean, index, integer, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, index, integer, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { users } from "./users";
+
+/** 일반 게시글 | 공지사항 (공지는 관리자만 등록) */
+export const postCategoryEnum = pgEnum("post_category", ["general", "notice"]);
 
 export const posts = pgTable(
   "posts",
@@ -10,6 +13,7 @@ export const posts = pgTable(
       .references(() => users.id, { onDelete: "restrict" }),
     title: text("title").notNull(),
     content: text("content").notNull(),
+    category: postCategoryEnum("category").notNull().default("general"),
     /** 조회수 캐시 — 목록·상세에서 COUNT 없이 빠르게 표시 */
     viewCount: integer("view_count").notNull().default(0),
     /** 좋아요 수 캐시 — likes 집계 대신 카드/목록 렌더에 사용 */
