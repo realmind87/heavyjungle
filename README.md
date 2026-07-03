@@ -1,15 +1,18 @@
 # Heavy Jungle (heavyjungle)
 
-Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server Component를 기본으로 하며, 자체 세션 인증·게시글·댓글·프로필·NAS Docker 배포까지 포함합니다.
+Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server Component를 기본으로 하며, 자체 세션 인증·게시글·댓글·프로필·관리자·NAS Docker 배포까지 포함합니다.
 
 ## 서비스 URL
 
 | 환경 | URL | 비고 |
 |------|-----|------|
 | **프로덕션** | [https://heavyjungle.com](https://heavyjungle.com) | Synology NAS + Docker + Cloudflare Tunnel |
+| S3 공개 URL | [https://s3.heavyjungle.com/uploads](https://s3.heavyjungle.com/uploads) | MinIO presigned PUT + 공개 읽기 |
 | 로컬 개발 | http://localhost:3000 | `npm run dev` |
 
 프로덕션 사이트명: **Heavy Jungle**
+
+---
 
 ## 구현된 기능
 
@@ -17,38 +20,40 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
 
 - 회원가입 / 로그인 / 로그아웃 (Server Actions + httpOnly 세션 쿠키)
 - 헤더 로그인·회원가입 모달, `?next=` 리다이렉트 지원
-- **아이디 찾기** — 가입 이메일로 아이디 안내 메일 발송 (`/login/find-username`)
-- **비밀번호 찾기** — 이메일 재설정 링크 발송, 1시간 유효 토큰 (`/login/forgot-password` → `/reset-password`)
+- **아이디 찾기** — 가입 이메일로 아이디 안내 메일 (`/login/find-username`)
+- **비밀번호 찾기** — 재설정 링크 메일 발송, 1시간 유효 토큰 (`/login/forgot-password` → `/reset-password`)
 - 프로필 비밀번호·이메일 변경 (`/u/[username]/settings/...`)
 - **관리자 권한** — `users.role` (`user` \| `admin`) + `ADMIN_USERNAMES` 환경 변수 병행
-- 관리자 계정 생성 스크립트 (`node scripts/create-admin-user.mjs <username>`)
+- 관리자 계정 생성·승격 스크립트 (`scripts/create-admin-user.mjs`, `scripts/nas-promote-admin.sh`)
 
 ### 게시글
 
-- 글 작성 / 수정 / 삭제 (soft delete) — 작성 취소 버튼
-- **리치 텍스트 에디터** (HTML sanitize)
-  - 굵게, 기울임, 취소선, 링크, 글자 크기·색상, 정렬
-  - **이미지** 업로드 (최대 100MB) — 선택 시 X 삭제, 좌·가운데·우 정렬
-  - **동영상** 업로드 (MP4/WebM/MOV, 최대 1GB) — 업로드 진행률·취소, 커버 프레임 드래그 선택
+- **글 작성 / 수정** — `PostForm` 공용 컴포넌트 (동일 UI·에디터)
+  - 작성: `/write` — 취소 시 홈 이동
+  - 수정: `/posts/[id]/edit` — 저장·글 삭제(soft delete)
+- **리치 텍스트 에디터** (서버 HTML sanitize)
+  - 굵게·기울임·취소선·링크·글자 크기·색상·정렬
+  - **이미지** 업로드 (JPEG/PNG/WebP, 최대 100MB) — 선택 후 X 삭제, 좌·가운데·우 정렬
+  - **동영상** 업로드 (MP4/WebM/MOV, 최대 1GB) — 진행률·취소, 커버 프레임 드래그 선택
   - **YouTube** embed 삽입
-- 홈 최신글 목록 + 커서 페이지네이션
-- 썸네일 카드 — 이미지 / 동영상(포스터·플레이스홀더) / YouTube 썸네일
-- 글 상세 — 조회수, 좋아요, 댓글 수, 정렬·미디어 스타일 반영
-- 작성자 아바타·표시 이름 메타 표시
+  - **키보드 단축키**
+    - `Tab` / `Shift+Tab` — 들여쓰기 / 내어쓰기
+    - 들여쓰기 줄 맨 앞에서 `Backspace` — 내어쓰기
+    - `Ctrl+B` / `Ctrl+I` / `Ctrl+K` / `Ctrl+Shift+S` — 굵게 / 기울임 / 링크 / 취소선
+    - `Shift+Enter` — 줄바꿈(soft break)
+- **홈 글 목록**
+  - 정렬: 최신순 / 인기순 / 오래된순
+  - 보기: 리스트 / 썸네일 카드
+  - 커서 페이지네이션 + 더 보기
+- 썸네일 — 본문 첫 이미지 / 동영상 포스터 / YouTube 썸네일
+- 글 상세 — 조회수·좋아요·댓글 수, 작성자 표시 이름·아바타
 
 ### 댓글
 
 - 댓글 작성 / 삭제 (soft delete)
 - 1단계 대댓글 (중첩 스레드)
-- 리치 텍스트 댓글 (이미지·링크) — 툴바 하단 등록·취소 버튼
-- 에러 토스트 피드백
-
-### 관리자 (`/admin`)
-
-- 관리자 전용 페이지 (로그인 + 권한 검사)
-- 탭 UI: **최신 글** / **최신 댓글** / **사용자**
-- 글·댓글 삭제, 사용자 role 변경 (`user` ↔ `admin`)
-- 프로필 메뉴에 관리자 링크 (관리자만 표시)
+- 리치 텍스트 (이미지·링크) — 에디터 하단 등록·취소 버튼
+- 작성자 표시 이름·아바타 표시
 
 ### 좋아요 · 조회수
 
@@ -57,41 +62,66 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
 
 ### 프로필
 
-- 공개 프로필 페이지 (`/u/[username]`)
-- 표시 이름·소개·아바타 수정
-- MinIO(S3 호환) 아바타 업로드
-- 헤더 프로필 이미지 (`avatarUrl`) 표시
-- 내가 쓴 글 목록
+- 공개 프로필 (`/u/[username]`) — 표시 이름·@아이디·소개·아바타·통계·내 글 목록
+- **표시 이름** — 헤더·글 목록·댓글·글 상세 전역 반영 (없으면 아이디 사용)
+- 프로필 수정 — 표시 이름·소개·아바타 (모달 / 풀페이지)
+- MinIO(S3) presigned URL 아바타 업로드
 
-### UI · UX
+### 관리자 (`/admin`)
 
-- 라이트 / 다크 모드 (프로필 메뉴 토글)
-- 공통 UI 클래스 (`src/lib/ui-classes.ts`)
-- 반응형 헤더 (모바일 메뉴, 글쓰기 버튼)
+- 관리자 전용 (로그인 + `role=admin` 또는 `ADMIN_USERNAMES`)
+- 탭: **최신 글** / **최신 댓글** / **사용자**
+- 글·댓글 삭제, 사용자 role 변경 (`user` ↔ `admin`)
+- 헤더 프로필 메뉴에 관리자 링크 (관리자만)
+
+### UI · 브랜딩
+
+- **Heavy Jungle** 로고 헤더 (`public/logo/logo.png`)
+- 파비콘 (`public/favicon.ico`, `src/app/icon.png`)
+- 라이트 / 다크 모드 (프로필 메뉴)
+- 반응형 헤더 — 모바일 메뉴, 글쓰기 버튼, 프로필 드롭다운
+
+### 파일 · 스토리지
+
+- MinIO(S3 호환) — `uploads` 버킷
+- prefix: `avatars/`, `posts/`, `comments/`
+- presigned PUT 업로드 + 공개 읽기
+- **HTTPS 운영** — `S3_PUBLIC_URL` / `NEXT_PUBLIC_S3_PUBLIC_URL` (Docker **빌드 시** 주입)
+- Cloudflare Tunnel로 `s3.heavyjungle.com` → MinIO 노출
+
+### 이메일 (Resend)
+
+- 아이디 안내·비밀번호 재설정 메일 (`[Heavy Jungle]` 제목)
+- **로컬**: `RESEND_API_KEY` 없으면 터미널 콘솔 출력
+- **운영**: `RESEND_API_KEY` + `EMAIL_FROM` 필수 (미설정 시 발송 실패 오류)
+- `EMAIL_FROM` 예: `Heavy Jungle <noreply@heavyjungle.com>` (Resend 도메인 인증 후 자유 설정)
 
 ### 인프라 · 개발 DX
 
-- Docker Compose — PostgreSQL, Redis, MinIO
-- Drizzle ORM 마이그레이션 (`0009`: `users.role` enum)
+- Docker Compose — PostgreSQL, Redis, MinIO (로컬 / NAS)
+- Drizzle ORM 마이그레이션 (`users.role` 등)
 - `npm run dev` 시 로컬 DB 자동 기동 (`scripts/ensure-local-db.sh`)
-- NAS 배포 스크립트 (`scripts/nas-deploy.sh`)
-- MinIO 공개 읽기: `uploads/avatars`, `uploads/comments`, `uploads/posts`
+- NAS 배포: `scripts/nas-deploy.sh`, `scripts/nas-migrate.sh`, `scripts/nas-doctor.sh`
+
+---
 
 ## 기술 스택
 
 | 영역 | 기술 |
 |------|------|
-| Framework | Next.js 15 (App Router, Turbopack) |
+| Framework | Next.js 15 (App Router, Turbopack, standalone Docker) |
 | UI | React 19, Tailwind CSS v4 |
 | ORM | Drizzle ORM |
 | Database | PostgreSQL 16 |
 | Cache | Redis 7 |
-| Storage | MinIO (S3 호환) |
+| Storage | MinIO (S3 호환, AWS SDK presigned URL) |
 | Auth | Argon2id, 자체 세션 (DB + httpOnly 쿠키) |
 | Validation | Zod v4 |
 | Client State | TanStack Query |
-| Email | Resend API (선택, dev는 콘솔 출력) |
+| Email | Resend API |
 | Infra | Docker Compose, Cloudflare Tunnel |
+
+---
 
 ## 프로젝트 구조
 
@@ -99,31 +129,27 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
 src/
 ├── app/                      # App Router 페이지·API
 │   ├── api/                  # REST (/health, /items, /posts/...)
+│   ├── admin/                # 관리자
 │   ├── login/                # 로그인, 아이디/비밀번호 찾기
 │   ├── posts/[id]/           # 글 상세·수정
 │   ├── write/                # 글 작성
-│   ├── u/[username]/         # 프로필·설정
-│   └── page.tsx              # 홈 (최신글)
-├── components/               # 공통 UI (header, auth 모달 등)
+│   ├── u/[username]/         # 프로필·설정 (인터셉트 모달)
+│   └── page.tsx              # 홈
+├── components/               # header, auth 모달, providers
 ├── features/                 # 도메인별 actions, queries, components
-│   ├── auth/
-│   ├── posts/
+│   ├── auth/                 # 로그인·회원가입·recovery
+│   ├── posts/                # 글, PostForm, 리치 에디터
 │   ├── comments/
 │   ├── likes/
 │   ├── profile/
+│   ├── uploads/              # presigned URL 업로드
 │   └── admin/
-├── server/                   # DB, auth, email
-│   ├── db/schema/
-│   ├── auth/
-│   └── email/
-├── lib/                      # env, validators, cursor, storage-url
-└── db/migrations/            # SQL 마이그레이션
+├── server/                   # DB, auth, email, storage
+├── lib/                      # env, sanitize, storage-url, shortcuts
+└── db/migrations/
 ```
 
-## 사전 요구사항
-
-- Node.js 18+
-- Docker Desktop (로컬 DB·Redis·MinIO)
+---
 
 ## 로컬 개발
 
@@ -141,34 +167,34 @@ npm install
 cp .env.example .env
 ```
 
-### 3. 개발 서버 실행
+### 3. 개발 서버
 
 ```bash
 npm run dev
 ```
 
-`predev` 훅이 Docker(Postgres/Redis/MinIO) 상태를 확인하고, 꺼져 있으면 자동으로 올립니다.
+`predev`가 Docker(Postgres/Redis/MinIO)를 확인·기동합니다.
 
 | URL | 설명 |
 |-----|------|
-| http://localhost:3000 | 홈 (최신글) |
-| http://localhost:3000/write | 글 작성 (로그인 필요) |
+| http://localhost:3000 | 홈 |
+| http://localhost:3000/write | 글 작성 |
 | http://localhost:3000/login | 로그인 |
-| http://localhost:3000/items | CRUD 데모 |
+| http://localhost:3000/admin | 관리자 |
 | http://localhost:9001 | MinIO 콘솔 (minioadmin / minioadmin) |
 
-수동으로 DB만 올릴 때:
-
 ```bash
-npm run docker:up
-npm run db:migrate
+npm run docker:up    # 수동 DB 기동
+npm run db:migrate   # 마이그레이션
 ```
+
+---
 
 ## 주요 라우트
 
 | 경로 | 설명 |
 |------|------|
-| `/` | 최신글 목록 |
+| `/` | 글 목록 (정렬·썸네일 뷰) |
 | `/write` | 글 작성 |
 | `/posts/[id]` | 글 상세 |
 | `/posts/[id]/edit` | 글 수정 |
@@ -177,28 +203,28 @@ npm run db:migrate
 | `/login/forgot-password` | 비밀번호 찾기 |
 | `/reset-password?token=` | 비밀번호 재설정 |
 | `/signup` | 회원가입 |
-| `/admin` | 관리자 (글·댓글·사용자 관리) |
+| `/admin` | 관리자 |
 | `/u/[username]` | 프로필 |
 | `/u/[username]/edit` | 프로필 수정 |
-| `/settings` | 설정 (리다이렉트) |
+
+---
 
 ## npm 스크립트
 
 | 명령어 | 설명 |
 |--------|------|
-| `npm run dev` | 개발 서버 (DB 자동 확인 포함) |
+| `npm run dev` | 개발 서버 |
 | `npm run build` | 프로덕션 빌드 |
 | `npm run start` | 프로덕션 서버 |
 | `npm run lint` | ESLint |
-| `npm run docker:up` | 로컬 Docker 시작 |
-| `npm run docker:down` | 로컬 Docker 종료 |
-| `npm run db:migrate` | 마이그레이션 적용 |
-| `npm run db:generate` | 마이그레이션 파일 생성 |
-| `npm run db:studio` | Drizzle Studio |
-| `npm run deploy:nas` | NAS 배포 스크립트 |
+| `npm run docker:up` / `docker:down` | 로컬 Docker |
+| `npm run db:migrate` | 마이그레이션 |
+| `npm run deploy:nas` | NAS 배포 |
 | `npm run docker:nas:cloudflare` | NAS + Cloudflare Tunnel |
-| `node scripts/create-admin-user.mjs <username>` | 관리자 계정 생성·승격 (로컬) |
-| `./scripts/nas-promote-admin.sh <username>` | 운영 NAS — DB role 승격 |
+| `node scripts/create-admin-user.mjs <username>` | 관리자 생성 (로컬) |
+| `./scripts/nas-promote-admin.sh <username>` | NAS 관리자 승격 |
+
+---
 
 ## Synology NAS 배포
 
@@ -213,103 +239,74 @@ git clone https://github.com/realmind87/heavyjungle.git
 cd heavyjungle
 
 cp .env.nas.example .env
-# POSTGRES_PASSWORD, CLOUDFLARE_TUNNEL_TOKEN, APP_URL, RESEND_API_KEY 등 설정
-
-docker compose -f docker-compose.nas.yml --profile cloudflare up -d --build
+# 아래 항목 설정 후 빌드·기동
 ```
+
+**NAS `.env` 필수 항목 예시:**
+
+```env
+POSTGRES_PASSWORD=...
+CLOUDFLARE_TUNNEL_TOKEN=...
+S3_PUBLIC_URL=https://s3.heavyjungle.com/uploads
+APP_URL=https://heavyjungle.com
+RESEND_API_KEY=re_...
+EMAIL_FROM=Heavy Jungle <noreply@heavyjungle.com>
+ADMIN_USERNAMES=stansfield0125
+```
+
+```bash
+docker compose -f docker-compose.nas.yml --profile cloudflare up -d --build
+./scripts/nas-migrate.sh
+```
+
+> `S3_PUBLIC_URL`은 Docker **빌드 시** `NEXT_PUBLIC_S3_PUBLIC_URL`에도 박힙니다. 값 변경 후 반드시 `--build`로 재배포하세요.
 
 ### 업데이트 배포
 
-**Mac (코드 푸시)**
-
-```bash
-git add .
-git commit -m "your message"
-git push origin main
-```
-
-**NAS (SSH / DSM 터미널)**
-
 ```bash
 cd /volume1/docker/heavyjungle
 git pull origin main
-chmod +x scripts/nas-deploy.sh
 ./scripts/nas-deploy.sh
 ```
 
-또는 수동:
+### 운영 관리자
 
 ```bash
-cd /volume1/docker/heavyjungle
-git pull origin main
-sudo docker compose -f docker-compose.nas.yml --profile cloudflare up -d --build
-npm run db:migrate   # 새 마이그레이션 있을 때
+./scripts/nas-migrate.sh
+./scripts/nas-promote-admin.sh <username>
 ```
 
-### 운영 관리자 계정 (DB `role` 방식)
-
-1. [https://heavyjungle.com/signup](https://heavyjungle.com/signup) 에서 회원가입
-2. NAS에서 승격:
-
-```bash
-cd /volume1/docker/heavyjungle
-git pull origin main
-./scripts/nas-migrate.sh                    # users.role 컬럼 (0009) 적용
-chmod +x scripts/nas-promote-admin.sh
-./scripts/nas-promote-admin.sh stansfield0125
-```
-
-계정이 없으면 생성:
-
-```bash
-sudo docker compose -f docker-compose.nas.yml --profile migrate run --rm migrate \
-  node scripts/create-admin-user.mjs stansfield0125
-```
-
-`users.role = 'admin'` 이면 `ADMIN_USERNAMES` 없이도 `/admin` 접근 가능합니다.
+---
 
 ## 환경 변수
 
-`.env.example` 참고:
-
 | 변수 | 설명 |
 |------|------|
-| `DATABASE_URL` | PostgreSQL 연결 URL |
-| `REDIS_URL` | Redis 연결 URL |
-| `S3_*` | MinIO / S3 스토리지 (아바타 등) |
-| `APP_URL` | 비밀번호 재설정 링크용 앱 URL |
-| `RESEND_API_KEY` | 이메일 발송 (Resend) — **운영 필수** (아이디/비밀번호 찾기) |
-| `EMAIL_FROM` | 발신 주소 (예: `Heavy Jungle <noreply@heavyjungle.com>`) |
-| `ADMIN_USERNAMES` | 관리자 아이디 (쉼표 구분, DB `role`과 병행) |
-| `NEXT_PUBLIC_S3_PUBLIC_URL` | 클라이언트용 S3 공개 URL (에디터 미리보기) |
+| `DATABASE_URL` | PostgreSQL |
+| `REDIS_URL` | Redis |
+| `S3_ENDPOINT` | MinIO 내부 URL (예: `http://minio:9000`) |
+| `S3_PUBLIC_URL` | 브라우저용 HTTPS 공개 URL (presigned PUT + 읽기) |
+| `NEXT_PUBLIC_S3_PUBLIC_URL` | 클라이언트 번들용 (NAS는 빌드 arg로 `S3_PUBLIC_URL`과 동일) |
+| `APP_URL` | 비밀번호 재설정 링크 절대 URL |
+| `RESEND_API_KEY` | Resend API 키 (운영 필수) |
+| `EMAIL_FROM` | 발신 주소 |
+| `ADMIN_USERNAMES` | 관리자 아이디 (쉼표 구분) |
 
-개발 환경에서 `RESEND_API_KEY`가 없으면 아이디/비밀번호 찾기 메일 내용이 **터미널 콘솔**에 출력됩니다.
+로컬은 `.env.example`, NAS는 `.env.nas.example` 참고.
 
-운영(NAS)에서는 `RESEND_API_KEY`와 `EMAIL_FROM`을 `.env`에 설정해야 메일이 발송됩니다. 미설정 시 사용자에게 “메일 발송에 실패했습니다” 오류가 표시됩니다. Resend에서 `heavyjungle.com` 도메인을 인증한 뒤 발신 주소를 등록하세요.
+---
 
 ## API
 
-### Posts
-
 | Method | Endpoint | 설명 |
 |--------|----------|------|
+| `GET` | `/api/health` | DB·Redis 상태 |
 | `GET` | `/api/posts` | 글 목록 |
 | `POST` | `/api/posts/[id]/like` | 좋아요 토글 |
 | `POST` | `/api/posts/[id]/view` | 조회수 증가 |
+| `GET/POST` | `/api/items` | CRUD 데모 |
 
-### Items (데모)
-
-| Method | Endpoint | 설명 |
-|--------|----------|------|
-| `GET` | `/api/items?cursor=&limit=` | 목록 (커서 페이지네이션) |
-| `POST` | `/api/items` | 생성 |
-| `GET/PATCH/DELETE` | `/api/items/:id` | 조회·수정·삭제 |
-
-### Health
-
-| Method | Endpoint | 설명 |
-|--------|----------|------|
-| `GET` | `/api/health` | PostgreSQL, Redis 상태 |
+---
 
 ## 아키텍처
 
@@ -324,12 +321,16 @@ features/* (queries, actions)
   ↓
 Drizzle ORM → PostgreSQL
 Redis (캐시, 예정)
-MinIO (파일)
+MinIO (S3) ← Cloudflare Tunnel (s3.heavyjungle.com)
+Resend (이메일)
 ```
 
-- **세션** — 32바이트 토큰 → SHA-256 해시 DB 저장, httpOnly 쿠키
-- **커서 페이지네이션** — `createdAt` + `id` 복합 커서
-- **캐시 카운터** — `view_count`, `like_count`, `comment_count` 컬럼으로 목록 N+1 방지
+- **세션** — 32바이트 토큰 → SHA-256 해시 DB, httpOnly 쿠키, sliding renewal
+- **업로드** — 서버가 presigned PUT URL 발급 → 브라우저가 MinIO에 직접 PUT
+- **커서 페이지네이션** — 정렬별 복합 커서 (`createdAt`+`id`, `likeCount`+`id`)
+- **카운터 캐시** — `view_count`, `like_count`, `comment_count`
+
+---
 
 ## 향후 예정
 
@@ -338,14 +339,7 @@ MinIO (파일)
 - Redis 세션 미러·레이트 리미팅
 - GitHub Actions 자동 NAS 배포
 
-## 최근 업데이트 요약
-
-- 게시글 에디터: 이미지·동영상·YouTube, 링크·취소선, 정렬, 업로드 진행률·취소, 동영상 커버 프레임 드래그 선택
-- 글 목록 썸네일: 이미지 / 동영상 / YouTube 구분 표시
-- 댓글 에디터: 등록·취소 버튼을 에디터 하단으로 통합
-- 관리자: DB `role`, `/admin` 탭 UI, 계정 생성 스크립트
-- 헤더 프로필 아바타, 글 작성 취소 버튼
-- sanitize·S3 업로드 정책 확장 (posts/comments 미디어)
+---
 
 ## 라이선스
 
