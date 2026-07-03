@@ -91,6 +91,7 @@ export async function getUserPosts(
       createdAt: posts.createdAt,
       authorId: users.id,
       authorUsername: users.username,
+      authorDisplayName: users.displayName,
       authorAvatarUrl: users.avatarUrl,
     })
     .from(posts)
@@ -113,6 +114,7 @@ export async function getUserPosts(
       author: {
         id: row.authorId,
         username: row.authorUsername,
+        displayName: row.authorDisplayName,
         avatarUrl: row.authorAvatarUrl,
       },
     };

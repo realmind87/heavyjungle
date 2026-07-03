@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LoginModal } from "@/components/auth/login-modal";
@@ -9,20 +10,32 @@ import { useThemeMode } from "@/hooks/use-theme-mode";
 
 type HeaderUser = {
   username: string;
+  displayName: string;
   avatarUrl?: string | null;
   isAdmin?: boolean;
 };
 
 type AuthModal = "login" | "signup" | null;
 
-function getProfileInitial(username: string) {
-  return username.charAt(0).toUpperCase();
+function getProfileInitial(name: string) {
+  return name.charAt(0).toUpperCase();
 }
 
-function ProfileMenu({ username, avatarUrl, isAdmin }: { username: string; avatarUrl?: string | null; isAdmin?: boolean }) {
+function ProfileMenu({
+  username,
+  displayName,
+  avatarUrl,
+  isAdmin,
+}: {
+  username: string;
+  displayName: string;
+  avatarUrl?: string | null;
+  isAdmin?: boolean;
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { isDark, setThemeMode } = useThemeMode();
+  const showUsername = displayName !== username;
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -49,9 +62,9 @@ function ProfileMenu({ username, avatarUrl, isAdmin }: { username: string; avata
     <div ref={menuRef} className="relative">
       <button
         type="button"
-        aria-label={`${username} 프로필`}
+        aria-label={`${displayName} 프로필`}
         aria-expanded={isOpen}
-        title={username}
+        title={displayName}
         onClick={() => setIsOpen((prev) => !prev)}
         className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-sm font-semibold text-white ring-2 ring-zinc-200 transition hover:ring-zinc-300 dark:bg-zinc-100 dark:text-zinc-900 dark:ring-zinc-700 dark:hover:ring-zinc-600"
       >
@@ -59,11 +72,11 @@ function ProfileMenu({ username, avatarUrl, isAdmin }: { username: string; avata
           // eslint-disable-next-line @next/next/no-img-element -- S3 공개 URL 아바타
           <img
             src={avatarUrl}
-            alt={`${username} 프로필 이미지`}
+            alt={`${displayName} 프로필 이미지`}
             className="h-full w-full rounded-full object-cover"
           />
         ) : (
-          getProfileInitial(username)
+          getProfileInitial(displayName)
         )}
       </button>
 
@@ -75,15 +88,20 @@ function ProfileMenu({ username, avatarUrl, isAdmin }: { username: string; avata
                 // eslint-disable-next-line @next/next/no-img-element -- S3 공개 URL 아바타
                 <img
                   src={avatarUrl}
-                  alt={`${username} 프로필 이미지`}
+                  alt={`${displayName} 프로필 이미지`}
                   className="h-7 w-7 rounded-full object-cover"
                 />
               ) : (
                 <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-zinc-200 text-xs font-semibold text-zinc-700 dark:bg-zinc-700 dark:text-zinc-100">
-                  {getProfileInitial(username)}
+                  {getProfileInitial(displayName)}
                 </span>
               )}
-              <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">{username}</p>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">{displayName}</p>
+                {showUsername && (
+                  <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">@{username}</p>
+                )}
+              </div>
             </div>
           </div>
 
@@ -199,11 +217,15 @@ export function Header({ user }: HeaderProps) {
     <>
       <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white/90 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
         <div className="mx-auto flex h-15 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <Link
-            href="/"
-            className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-xl"
-          >
-            Heavy Jungle
+          <Link href="/" className="inline-flex shrink-0 items-center" aria-label="Heavy Jungle 홈">
+            <Image
+              src="/logo/logo.png"
+              alt="Heavy Jungle"
+              width={1019}
+              height={210}
+              className="h-8 w-auto sm:h-9"
+              priority
+            />
           </Link>
 
           <div className="flex items-center gap-5 sm:gap-2">
@@ -254,7 +276,14 @@ export function Header({ user }: HeaderProps) {
                 </svg>
               </Link>
             )}
-            {user && <ProfileMenu username={user.username} avatarUrl={user.avatarUrl} isAdmin={user.isAdmin} />}
+            {user && (
+              <ProfileMenu
+                username={user.username}
+                displayName={user.displayName}
+                avatarUrl={user.avatarUrl}
+                isAdmin={user.isAdmin}
+              />
+            )}
           </div>
         </div>
 

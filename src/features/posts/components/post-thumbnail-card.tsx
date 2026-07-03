@@ -79,6 +79,7 @@ export function PostThumbnailCard({ post, returnListState }: PostThumbnailCardPr
       <div className="flex flex-1 flex-col p-4">
         <ProfileAuthorLink
           username={post.author.username}
+          displayName={post.author.displayName}
           avatarUrl={resolveAvatarPublicUrl(post.author.avatarUrl)}
         />
 

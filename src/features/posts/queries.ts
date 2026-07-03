@@ -29,6 +29,7 @@ export type PostListItem = {
   author: {
     id: string;
     username: string;
+    displayName: string | null;
     avatarUrl: string | null;
   };
 };
@@ -43,6 +44,7 @@ type PostRow = {
   createdAt: Date;
   authorId: string;
   authorUsername: string;
+  authorDisplayName: string | null;
   authorAvatarUrl: string | null;
 };
 
@@ -56,6 +58,7 @@ const postListSelect = {
   createdAt: posts.createdAt,
   authorId: users.id,
   authorUsername: users.username,
+  authorDisplayName: users.displayName,
   authorAvatarUrl: users.avatarUrl,
 };
 
@@ -73,6 +76,7 @@ function mapPostListItem(row: PostRow): PostListItem {
     author: {
       id: row.authorId,
       username: row.authorUsername,
+      displayName: row.authorDisplayName,
       avatarUrl: row.authorAvatarUrl,
     },
   };

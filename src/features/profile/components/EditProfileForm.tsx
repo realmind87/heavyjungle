@@ -4,7 +4,7 @@
  * 프로필 수정 폼 — 인터셉트 모달·풀페이지 공용.
  * 아바타는 AvatarUploader(presigned URL)로 별도 업로드.
  */
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AvatarUploader } from "@/features/profile/components/AvatarUploader";
 import { updateProfile, type ProfileActionState } from "@/features/profile/actions";
@@ -20,7 +20,6 @@ import {
 type EditProfileFormProps = {
   username: string;
   variant: "modal" | "page";
-  displayName: string;
   initial: {
     displayName: string;
     bio: string;
@@ -28,9 +27,11 @@ type EditProfileFormProps = {
   };
 };
 
-export function EditProfileForm({ username, variant, displayName, initial }: EditProfileFormProps) {
+export function EditProfileForm({ username, variant, initial }: EditProfileFormProps) {
   const router = useRouter();
   const [state, formAction, pending] = useActionState(updateProfile, {} as ProfileActionState);
+  const [displayNameValue, setDisplayNameValue] = useState(initial.displayName);
+  const previewName = displayNameValue.trim() || username;
 
   useEffect(() => {
     if (!state.success) return;
@@ -45,14 +46,15 @@ export function EditProfileForm({ username, variant, displayName, initial }: Edi
 
   return (
     <div className="space-y-6">
-      <AvatarUploader displayName={displayName} initialPublicUrl={initial.avatarPublicUrl} />
+      <AvatarUploader displayName={previewName} initialPublicUrl={initial.avatarPublicUrl} />
 
       <form action={formAction} className="space-y-4">
         <label className="block">
           <span className={labelMediumClass}>표시 이름</span>
           <input
             name="displayName"
-            defaultValue={initial.displayName}
+            value={displayNameValue}
+            onChange={(event) => setDisplayNameValue(event.target.value)}
             maxLength={30}
             placeholder="비워두면 아이디가 표시됩니다"
             className={`mt-1 ${inputClass}`}

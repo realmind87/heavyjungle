@@ -22,6 +22,7 @@ export function PostCard({ post, returnListState }: PostCardProps) {
         <div className="mb-2">
           <ProfileAuthorLink
             username={post.author.username}
+            displayName={post.author.displayName}
             avatarUrl={resolveAvatarPublicUrl(post.author.avatarUrl)}
           />
         </div>

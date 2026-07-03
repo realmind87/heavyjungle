@@ -63,6 +63,19 @@ function setBlockPaddingLeftEm(block: HTMLElement, em: number) {
   block.style.setProperty("padding-left", `${em}em`);
 }
 
+function isCaretAtBlockStart(editor: HTMLElement, block: HTMLElement): boolean {
+  const range = getSelectionRange();
+  if (!range?.collapsed || !editor.contains(range.commonAncestorContainer)) {
+    return false;
+  }
+
+  const probe = document.createRange();
+  probe.selectNodeContents(block);
+  probe.setEnd(range.endContainer, range.endOffset);
+
+  return probe.toString().replace(/\u200B/g, "").length === 0;
+}
+
 export function indentEditorSelection(editor: HTMLElement, outdent: boolean): boolean {
   const block = ensureCaretBlock(editor);
   if (!block) return false;
@@ -109,6 +122,22 @@ export function handleRichTextEditorKeyDown(
   editor: HTMLElement,
   handlers: RichTextShortcutHandlers,
 ): void {
+  if (event.key === "Backspace" && !event.metaKey && !event.ctrlKey && !event.altKey) {
+    const block = ensureCaretBlock(editor);
+    if (
+      block &&
+      block !== editor &&
+      getBlockPaddingLeftEm(block) > 0 &&
+      isCaretAtBlockStart(editor, block)
+    ) {
+      event.preventDefault();
+      if (indentEditorSelection(editor, true)) {
+        handlers.onInput();
+      }
+      return;
+    }
+  }
+
   if (event.key === "Tab") {
     event.preventDefault();
     if (indentEditorSelection(editor, event.shiftKey)) {

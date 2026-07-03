@@ -12,6 +12,7 @@ export async function SiteHeader() {
         user
           ? {
               username: user.username,
+              displayName: user.displayName ?? user.username,
               avatarUrl: resolveAvatarPublicUrl(user.avatarUrl),
               isAdmin: isAdmin(user),
             }

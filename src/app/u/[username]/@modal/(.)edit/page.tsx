@@ -11,14 +11,12 @@ type PageProps = {
 export default async function EditProfileInterceptPage({ params }: PageProps) {
   const { username } = await params;
   const user = await requireProfileOwner(username, `/u/${username}/edit`);
-  const displayName = user.displayName ?? user.username;
 
   return (
     <RouteModal title="프로필 수정">
       <EditProfileForm
         username={username}
         variant="modal"
-        displayName={displayName}
         initial={{
           displayName: user.displayName ?? "",
           bio: user.bio ?? "",

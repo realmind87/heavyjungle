@@ -53,6 +53,7 @@ export async function updateProfile(
     .where(eq(users.id, user.id));
 
   revalidatePath(`/u/${user.username}`);
+  revalidatePath("/", "layout");
   return { success: true, message: "프로필이 저장되었습니다." };
 }
 

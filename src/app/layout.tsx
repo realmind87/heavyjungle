@@ -8,6 +8,9 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Heavy Jungle",
   description: "Heavy Jungle is a community for developers to share their knowledge and experiences.",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({

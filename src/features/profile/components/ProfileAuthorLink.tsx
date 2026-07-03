@@ -10,7 +10,7 @@ type ProfileAuthorLinkProps = {
   className?: string;
 };
 
-/** 작성자 아바타·아이디 — 프로필 페이지로 이동 */
+/** 작성자 아바타·표시 이름 — 프로필 페이지로 이동 */
 export function ProfileAuthorLink({
   username,
   displayName,
@@ -26,7 +26,7 @@ export function ProfileAuthorLink({
       className={`inline-flex min-w-0 items-center gap-1.5 transition hover:opacity-80 ${className}`}
     >
       <ProfileAvatar name={name} avatarUrl={avatarUrl} size={size} />
-      <span className="truncate text-xs text-zinc-500 dark:text-zinc-400">{username}</span>
+      <span className="truncate text-xs text-zinc-500 dark:text-zinc-400">{name}</span>
     </Link>
   );
 }

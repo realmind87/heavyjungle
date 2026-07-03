@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { SiteHeader } from "@/components/layout/site-header";
-import { PostEditForm } from "@/features/posts/components/post-edit-form";
+import { PostForm } from "@/features/posts/components/post-form";
 import { getPostById } from "@/features/posts/queries";
 import { canModifyPost } from "@/server/auth/permissions";
 import { getCurrentUser } from "@/server/auth/current-user";
-import { linkMutedClass, pageTitleClass } from "@/lib/ui-classes";
+import { linkMutedClass } from "@/lib/ui-classes";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -22,13 +22,18 @@ export default async function PostEditPage({ params }: PageProps) {
   return (
     <div className="min-h-screen">
       <SiteHeader />
-      <main className="mx-auto max-w-4xl px-4 py-8">
+      <main className="mx-auto max-w-3xl px-4 py-8">
         <Link href={`/posts/${postId}`} className={linkMutedClass}>
           ← 글 보기
         </Link>
-        <h1 className={`mt-4 ${pageTitleClass}`}>글 수정</h1>
         <div className="mt-6">
-          <PostEditForm postId={postId} initialTitle={post.title} initialContent={post.content} />
+          <PostForm
+            mode="edit"
+            postId={postId}
+            initialTitle={post.title}
+            initialContent={post.content}
+            cancelHref={`/posts/${postId}`}
+          />
         </div>
       </main>
     </div>
