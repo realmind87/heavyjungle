@@ -18,8 +18,11 @@ ENV S3_REGION=us-east-1
 ENV S3_ACCESS_KEY_ID=build-placeholder
 ENV S3_SECRET_ACCESS_KEY=build-placeholder
 ENV S3_BUCKET=uploads
-ENV S3_PUBLIC_URL=http://localhost:9000/uploads
 ENV S3_FORCE_PATH_STYLE=true
+# NEXT_PUBLIC_* is inlined at build time — pass production URL via compose build.args (S3_PUBLIC_URL)
+ARG S3_PUBLIC_URL=http://localhost:9000/uploads
+ENV S3_PUBLIC_URL=${S3_PUBLIC_URL}
+ENV NEXT_PUBLIC_S3_PUBLIC_URL=${S3_PUBLIC_URL}
 RUN npm run build
 
 FROM base AS runner

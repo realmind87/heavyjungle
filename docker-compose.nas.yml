@@ -14,6 +14,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        # NEXT_PUBLIC_S3_PUBLIC_URL is baked into the client bundle at build time
+        S3_PUBLIC_URL: ${S3_PUBLIC_URL:-https://s3.heavyjungle.com/uploads}
     container_name: heavyjungle-app
     restart: unless-stopped
     ports:
