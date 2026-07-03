@@ -197,7 +197,8 @@ npm run db:migrate
 | `npm run db:studio` | Drizzle Studio |
 | `npm run deploy:nas` | NAS 배포 스크립트 |
 | `npm run docker:nas:cloudflare` | NAS + Cloudflare Tunnel |
-| `node scripts/create-admin-user.mjs <username>` | 관리자 계정 생성·승격 |
+| `node scripts/create-admin-user.mjs <username>` | 관리자 계정 생성·승격 (로컬) |
+| `./scripts/nas-promote-admin.sh <username>` | 운영 NAS — DB role 승격 |
 
 ## Synology NAS 배포
 
@@ -244,6 +245,28 @@ git pull origin main
 sudo docker compose -f docker-compose.nas.yml --profile cloudflare up -d --build
 npm run db:migrate   # 새 마이그레이션 있을 때
 ```
+
+### 운영 관리자 계정 (DB `role` 방식)
+
+1. [https://heavyjungle.com/signup](https://heavyjungle.com/signup) 에서 회원가입
+2. NAS에서 승격:
+
+```bash
+cd /volume1/docker/heavyjungle
+git pull origin main
+./scripts/nas-migrate.sh                    # users.role 컬럼 (0009) 적용
+chmod +x scripts/nas-promote-admin.sh
+./scripts/nas-promote-admin.sh stansfield0125
+```
+
+계정이 없으면 생성:
+
+```bash
+sudo docker compose -f docker-compose.nas.yml --profile migrate run --rm migrate \
+  node scripts/create-admin-user.mjs stansfield0125
+```
+
+`users.role = 'admin'` 이면 `ADMIN_USERNAMES` 없이도 `/admin` 접근 가능합니다.
 
 ## 환경 변수
 

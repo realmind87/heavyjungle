@@ -8,8 +8,8 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 COMPOSE_FILE="${NAS_COMPOSE_FILE:-docker-compose.nas.yml}"
-EXPECTED_MIGRATIONS=7
 JOURNAL_FILE="$ROOT/src/db/migrations/meta/_journal.json"
+EXPECTED_MIGRATIONS="$(grep -c '"tag":' "$JOURNAL_FILE" || true)"
 
 # docker-entrypoint-initdb.d 로 0000(items)만 적용된 레거시 볼륨용
 MIGRATION_0000_HASH="7b4d58f8fb7ee3f7ffeafb4a16e06244e02291a20698d39710fc7e9f3c6d8897"
