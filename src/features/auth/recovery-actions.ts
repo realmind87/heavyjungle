@@ -66,20 +66,22 @@ export async function findUsername(
     .where(eq(users.email, email))
     .limit(1);
 
-  if (user) {
-    try {
-      await sendEmail({
-        to: email,
-        subject: "[Heavy Jungle] 아이디 안내",
-        text: `가입하신 아이디는 "${user.username}" 입니다.`,
-        html: `<p>가입하신 아이디는 <strong>${user.username}</strong> 입니다.</p>`,
-      });
-    } catch {
-      return { error: "메일 발송에 실패했습니다. 잠시 후 다시 시도해 주세요." };
-    }
+  if (!user) {
+    return { error: "등록된 이메일이 아닙니다." };
   }
 
-  return { success: true, message: EMAIL_SENT_MESSAGE };
+  try {
+    await sendEmail({
+      to: email,
+      subject: "[Heavy Jungle] 아이디 안내",
+      text: `가입하신 아이디는 "${user.username}" 입니다.`,
+      html: `<p>가입하신 아이디는 <strong>${user.username}</strong> 입니다.</p>`,
+    });
+  } catch {
+    return { error: "메일 발송에 실패했습니다. 잠시 후 다시 시도해 주세요." };
+  }
+
+  return { success: true, message: "입력하신 이메일로 아이디를 발송했습니다." };
 }
 
 export async function requestPasswordReset(
