@@ -2,7 +2,6 @@ import Link from "next/link";
 import type { PostListItem } from "@/features/posts/queries";
 import { buildPostDetailHref, type PostListUiState } from "@/features/posts/post-list-state";
 import { ProfileAuthorLink } from "@/features/profile/components/ProfileAuthorLink";
-import { resolveAvatarPublicUrl } from "@/lib/public-object-url";
 
 type PostThumbnailCardProps = {
   post: PostListItem;
@@ -80,7 +79,7 @@ export function PostThumbnailCard({ post, returnListState }: PostThumbnailCardPr
         <ProfileAuthorLink
           username={post.author.username}
           displayName={post.author.displayName}
-          avatarUrl={resolveAvatarPublicUrl(post.author.avatarUrl)}
+          avatarUrl={post.author.avatarUrl}
         />
 
         <Link

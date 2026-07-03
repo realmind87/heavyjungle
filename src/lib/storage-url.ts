@@ -7,6 +7,15 @@ import { env } from "@/lib/env";
 
 export { resolveAvatarPublicUrl } from "@/lib/public-object-url";
 
+/** DB key 또는 절대 URL → S3_PUBLIC_URL 기준 공개 URL (서버 전용) */
+export function resolveStoragePublicUrl(stored: string | null | undefined): string | null {
+  if (!stored) return null;
+  if (stored.startsWith("http://") || stored.startsWith("https://")) {
+    return stored;
+  }
+  return buildPublicObjectUrl(stored);
+}
+
 export function buildPublicObjectUrl(key: string): string {
   const base = env.S3_PUBLIC_URL.replace(/\/$/, "");
   return `${base}/${key}`;

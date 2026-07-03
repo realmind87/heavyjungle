@@ -7,7 +7,7 @@ import { CommentThread, type SerializableCommentNode } from "@/features/comments
 import { canModifyComment } from "@/server/auth/permissions";
 import type { User } from "@/server/db/schema/users";
 import { mutedTextClass } from "@/lib/ui-classes";
-import { resolveAvatarPublicUrl } from "@/lib/storage-url";
+import { resolveStoragePublicUrl } from "@/lib/storage-url";
 
 type CommentSectionProps = {
   postId: string;
@@ -26,7 +26,7 @@ function serializeComment(comment: CommentFlat, user: User | null): Serializable
       id: comment.author.id,
       username: comment.author.username,
       displayName: comment.author.displayName,
-      avatarPublicUrl: resolveAvatarPublicUrl(comment.author.avatarUrl),
+      avatarPublicUrl: resolveStoragePublicUrl(comment.author.avatarUrl),
     },
     canDelete: canModifyComment(user, comment.author.id),
     replies: [],

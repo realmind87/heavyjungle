@@ -10,7 +10,7 @@ import { PostDeleteButton } from "@/features/posts/components/post-delete-button
 import { PostViewCount } from "@/features/posts/components/post-view-count";
 import { getPostById } from "@/features/posts/queries";
 import { ProfileAuthorLink } from "@/features/profile/components/ProfileAuthorLink";
-import { resolveAvatarPublicUrl } from "@/lib/storage-url";
+import { resolveStoragePublicUrl } from "@/lib/storage-url";
 import { formatRelativeTime } from "@/lib/time";
 import { canModifyPost } from "@/server/auth/permissions";
 import { getCurrentUser } from "@/server/auth/current-user";
@@ -65,7 +65,7 @@ export default async function PostDetailPage({ params, searchParams }: PageProps
             <ProfileAuthorLink
               username={post.author.username}
               displayName={post.author.displayName}
-              avatarUrl={resolveAvatarPublicUrl(post.author.avatarUrl)}
+              avatarUrl={resolveStoragePublicUrl(post.author.avatarUrl)}
             />
             <span>·</span>
             <div className="text-xs text-zinc-500 dark:text-zinc-400">

@@ -13,7 +13,7 @@ import {
   type PostSort,
 } from "@/features/posts/post-sort";
 import { extractPostCoverMedia, type PostCoverType } from "@/lib/post-cover-image";
-import { resolveAvatarPublicUrl } from "@/lib/public-object-url";
+import { resolveStoragePublicUrl } from "@/lib/storage-url";
 import { db } from "@/server/db";
 import { posts, users } from "@/server/db/schema";
 
@@ -72,12 +72,12 @@ function mapPostListItem(row: PostRow): PostListItem {
     commentCount: row.commentCount,
     createdAt: row.createdAt,
     coverType: cover?.type ?? null,
-    coverImageUrl: resolveAvatarPublicUrl(cover?.previewUrl),
+    coverImageUrl: resolveStoragePublicUrl(cover?.previewUrl),
     author: {
       id: row.authorId,
       username: row.authorUsername,
       displayName: row.authorDisplayName,
-      avatarUrl: row.authorAvatarUrl,
+      avatarUrl: resolveStoragePublicUrl(row.authorAvatarUrl),
     },
   };
 }

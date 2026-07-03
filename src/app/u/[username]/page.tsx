@@ -6,7 +6,7 @@ import { ProfileAvatar } from "@/features/profile/components/ProfileAvatar";
 import { UserPostsLoadMore } from "@/features/profile/components/UserPostsLoadMore";
 import { getPublicProfileByUsername, getUserPosts } from "@/features/profile/queries";
 import { getCurrentUser } from "@/server/auth/current-user";
-import { resolveAvatarPublicUrl } from "@/lib/storage-url";
+import { resolveStoragePublicUrl } from "@/lib/storage-url";
 import { mutedTextClass, pageTitleClass, sectionTitleClass } from "@/lib/ui-classes";
 
 type PageProps = {
@@ -37,7 +37,7 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
         <div className="flex items-start gap-4">
           <ProfileAvatar
             name={displayName}
-            avatarUrl={resolveAvatarPublicUrl(profile.avatarUrl)}
+            avatarUrl={resolveStoragePublicUrl(profile.avatarUrl)}
             size="lg"
           />
           <div className="min-w-0 flex-1">

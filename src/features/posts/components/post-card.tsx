@@ -3,7 +3,6 @@ import { formatRelativeTime } from "@/lib/time";
 import type { PostListItem } from "@/features/posts/queries";
 import { buildPostDetailHref, type PostListUiState } from "@/features/posts/post-list-state";
 import { ProfileAuthorLink } from "@/features/profile/components/ProfileAuthorLink";
-import { resolveAvatarPublicUrl } from "@/lib/public-object-url";
 
 type PostCardProps = {
   post: PostListItem;
@@ -23,7 +22,7 @@ export function PostCard({ post, returnListState }: PostCardProps) {
           <ProfileAuthorLink
             username={post.author.username}
             displayName={post.author.displayName}
-            avatarUrl={resolveAvatarPublicUrl(post.author.avatarUrl)}
+            avatarUrl={post.author.avatarUrl}
           />
         </div>
 

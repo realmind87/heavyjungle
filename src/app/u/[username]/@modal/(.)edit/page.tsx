@@ -1,7 +1,7 @@
 import { RouteModal } from "@/components/ui/RouteModal";
 import { EditProfileForm } from "@/features/profile/components/EditProfileForm";
 import { requireProfileOwner } from "@/features/profile/require-profile-owner";
-import { resolveAvatarPublicUrl } from "@/lib/storage-url";
+import { resolveStoragePublicUrl } from "@/lib/storage-url";
 
 type PageProps = {
   params: Promise<{ username: string }>;
@@ -20,7 +20,7 @@ export default async function EditProfileInterceptPage({ params }: PageProps) {
         initial={{
           displayName: user.displayName ?? "",
           bio: user.bio ?? "",
-          avatarPublicUrl: resolveAvatarPublicUrl(user.avatarUrl),
+          avatarPublicUrl: resolveStoragePublicUrl(user.avatarUrl),
         }}
       />
     </RouteModal>

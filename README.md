@@ -1,4 +1,4 @@
-# 배포는기도다 (heavyjungle)
+# Heavy Jungle (heavyjungle)
 
 Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server Component를 기본으로 하며, 자체 세션 인증·게시글·댓글·프로필·NAS Docker 배포까지 포함합니다.
 
@@ -9,7 +9,7 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
 | **프로덕션** | [https://heavyjungle.com](https://heavyjungle.com) | Synology NAS + Docker + Cloudflare Tunnel |
 | 로컬 개발 | http://localhost:3000 | `npm run dev` |
 
-프로덕션 사이트명: **배포는기도다**
+프로덕션 사이트명: **Heavy Jungle**
 
 ## 구현된 기능
 
@@ -34,7 +34,7 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
 - 홈 최신글 목록 + 커서 페이지네이션
 - 썸네일 카드 — 이미지 / 동영상(포스터·플레이스홀더) / YouTube 썸네일
 - 글 상세 — 조회수, 좋아요, 댓글 수, 정렬·미디어 스타일 반영
-- 작성자 아바타·아이디 메타 표시
+- 작성자 아바타·표시 이름 메타 표시
 
 ### 댓글
 
@@ -278,12 +278,14 @@ sudo docker compose -f docker-compose.nas.yml --profile migrate run --rm migrate
 | `REDIS_URL` | Redis 연결 URL |
 | `S3_*` | MinIO / S3 스토리지 (아바타 등) |
 | `APP_URL` | 비밀번호 재설정 링크용 앱 URL |
-| `RESEND_API_KEY` | 이메일 발송 (Resend) |
-| `EMAIL_FROM` | 발신 주소 |
+| `RESEND_API_KEY` | 이메일 발송 (Resend) — **운영 필수** (아이디/비밀번호 찾기) |
+| `EMAIL_FROM` | 발신 주소 (예: `Heavy Jungle <noreply@heavyjungle.com>`) |
 | `ADMIN_USERNAMES` | 관리자 아이디 (쉼표 구분, DB `role`과 병행) |
 | `NEXT_PUBLIC_S3_PUBLIC_URL` | 클라이언트용 S3 공개 URL (에디터 미리보기) |
 
 개발 환경에서 `RESEND_API_KEY`가 없으면 아이디/비밀번호 찾기 메일 내용이 **터미널 콘솔**에 출력됩니다.
+
+운영(NAS)에서는 `RESEND_API_KEY`와 `EMAIL_FROM`을 `.env`에 설정해야 메일이 발송됩니다. 미설정 시 사용자에게 “메일 발송에 실패했습니다” 오류가 표시됩니다. Resend에서 `heavyjungle.com` 도메인을 인증한 뒤 발신 주소를 등록하세요.
 
 ## API
 

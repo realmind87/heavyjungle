@@ -43,5 +43,5 @@ export async function sendEmail({ to, subject, text, html }: SendEmailInput): Pr
     return;
   }
 
-  console.error(`[email] 발송 설정이 없어 메일을 보내지 못했습니다: ${to}`);
+  throw new Error("이메일 발송이 설정되지 않았습니다.");
 }

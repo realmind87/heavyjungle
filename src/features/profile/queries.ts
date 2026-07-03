@@ -9,7 +9,7 @@ import type { CursorPage } from "@/lib/cursor";
 import type { PostListItem } from "@/features/posts/queries";
 import { userPostsQuerySchema } from "@/features/profile/validators";
 import { extractPostCoverMedia } from "@/lib/post-cover-image";
-import { resolveAvatarPublicUrl } from "@/lib/public-object-url";
+import { resolveStoragePublicUrl } from "@/lib/storage-url";
 import { db } from "@/server/db";
 import { posts, users } from "@/server/db/schema";
 
@@ -110,12 +110,12 @@ export async function getUserPosts(
       commentCount: row.commentCount,
       createdAt: row.createdAt,
       coverType: cover?.type ?? null,
-      coverImageUrl: resolveAvatarPublicUrl(cover?.previewUrl),
+      coverImageUrl: resolveStoragePublicUrl(cover?.previewUrl),
       author: {
         id: row.authorId,
         username: row.authorUsername,
         displayName: row.authorDisplayName,
-        avatarUrl: row.authorAvatarUrl,
+        avatarUrl: resolveStoragePublicUrl(row.authorAvatarUrl),
       },
     };
   });

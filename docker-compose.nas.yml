@@ -38,6 +38,10 @@ services:
       S3_PUBLIC_URL: ${S3_PUBLIC_URL:-https://s3.heavyjungle.com/uploads}
       NEXT_PUBLIC_S3_PUBLIC_URL: ${S3_PUBLIC_URL:-https://s3.heavyjungle.com/uploads}
       S3_FORCE_PATH_STYLE: "true"
+      APP_URL: ${APP_URL:-https://heavyjungle.com}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+      ADMIN_USERNAMES: ${ADMIN_USERNAMES:-}
     depends_on:
       postgres:
         condition: service_healthy

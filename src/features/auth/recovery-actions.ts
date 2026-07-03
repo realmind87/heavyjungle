@@ -70,7 +70,7 @@ export async function findUsername(
     try {
       await sendEmail({
         to: email,
-        subject: "[배포는기도다] 아이디 안내",
+        subject: "[Heavy Jungle] 아이디 안내",
         text: `가입하신 아이디는 "${user.username}" 입니다.`,
         html: `<p>가입하신 아이디는 <strong>${user.username}</strong> 입니다.</p>`,
       });
@@ -109,7 +109,7 @@ export async function requestPasswordReset(
 
       await sendEmail({
         to: email,
-        subject: "[배포는기도다] 비밀번호 재설정",
+        subject: "[Heavy Jungle] 비밀번호 재설정",
         text: `아래 링크에서 비밀번호를 재설정할 수 있습니다. (1시간 유효)\n\n${resetUrl}`,
         html: `<p>아래 링크에서 비밀번호를 재설정할 수 있습니다. (1시간 유효)</p><p><a href="${resetUrl}">${resetUrl}</a></p>`,
       });

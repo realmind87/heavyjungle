@@ -25,6 +25,9 @@ type PostFormBodyProps = {
   postId?: string;
   initialTitle?: string;
   initialContent?: string;
+  deleteAction?: (payload: FormData) => void;
+  deletePending?: boolean;
+  deleteState?: PostActionState;
 };
 
 function PostFormBody({
@@ -37,6 +40,9 @@ function PostFormBody({
   postId,
   initialTitle = "",
   initialContent = "",
+  deleteAction,
+  deletePending = false,
+  deleteState,
 }: PostFormBodyProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const contentInputRef = useRef<HTMLInputElement>(null);
@@ -63,6 +69,12 @@ function PostFormBody({
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     syncContent();
+
+    const submitter = (event.nativeEvent as SubmitEvent).submitter;
+    if (submitter instanceof HTMLButtonElement && submitter.dataset.action === "delete") {
+      return;
+    }
+
     const html = contentInputRef.current?.value ?? "";
     if (isPostHtmlEmpty(html)) {
       event.preventDefault();
@@ -101,7 +113,6 @@ function PostFormBody({
         onInput={syncContent}
       />
       <input ref={contentInputRef} type="hidden" name="content" defaultValue={initialContent} />
-      {state.error && <p className={errorTextClass}>{state.error}</p>}
       <div className="flex justify-end gap-2">
         <Link href={cancelHref} className={buttonSecondaryClass}>
           취소
@@ -109,7 +120,19 @@ function PostFormBody({
         <button type="submit" disabled={pending || isContentEmpty} className={buttonPrimaryClass}>
           {pending ? pendingLabel : submitLabel}
         </button>
+        {deleteAction && (
+          <button
+            type="submit"
+            formAction={deleteAction}
+            data-action="delete"
+            disabled={deletePending}
+            className={buttonDangerClass}
+          >
+            {deletePending ? "삭제 중..." : "글 삭제"}
+          </button>
+        )}
       </div>
+      {deleteState?.error && <p className={errorTextClass}>{deleteState.error}</p>}
     </form>
   );
 }
@@ -117,12 +140,12 @@ function PostFormBody({
 type PostFormProps =
   | { mode: "create"; cancelHref?: string }
   | {
-      mode: "edit";
-      postId: string;
-      initialTitle: string;
-      initialContent: string;
-      cancelHref?: string;
-    };
+    mode: "edit";
+    postId: string;
+    initialTitle: string;
+    initialContent: string;
+    cancelHref?: string;
+  };
 
 function PostFormCreate({ cancelHref = "/" }: { cancelHref?: string }) {
   const [state, formAction, pending] = useActionState(createPost, {} as PostActionState);
@@ -154,27 +177,20 @@ function PostFormEdit({
   const [deleteState, deleteAction, deletePending] = useActionState(deletePost, {} as PostActionState);
 
   return (
-    <div className="space-y-8">
-      <PostFormBody
-        formAction={formAction}
-        pending={pending}
-        state={state}
-        cancelHref={cancelHref}
-        submitLabel="저장"
-        pendingLabel="저장 중..."
-        postId={postId}
-        initialTitle={initialTitle}
-        initialContent={initialContent}
-      />
-
-      <form action={deleteAction} className="border-t border-zinc-200 pt-6 dark:border-zinc-800">
-        <input type="hidden" name="postId" value={postId} />
-        {deleteState.error && <p className={`mb-2 ${errorTextClass}`}>{deleteState.error}</p>}
-        <button type="submit" disabled={deletePending} className={buttonDangerClass}>
-          {deletePending ? "삭제 중..." : "글 삭제"}
-        </button>
-      </form>
-    </div>
+    <PostFormBody
+      formAction={formAction}
+      pending={pending}
+      state={state}
+      cancelHref={cancelHref}
+      submitLabel="저장"
+      pendingLabel="저장 중..."
+      postId={postId}
+      initialTitle={initialTitle}
+      initialContent={initialContent}
+      deleteAction={deleteAction}
+      deletePending={deletePending}
+      deleteState={deleteState}
+    />
   );
 }
 
