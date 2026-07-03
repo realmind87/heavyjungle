@@ -7,7 +7,6 @@ import { PostThumbnailCard } from "@/features/posts/components/post-thumbnail-ca
 import type { PostListItem } from "@/features/posts/queries";
 import {
   buildPostListHref,
-  buildPostListReturnQuery,
   type PostListUiState,
   type PostListView,
 } from "@/features/posts/post-list-state";

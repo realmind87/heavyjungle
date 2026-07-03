@@ -330,7 +330,11 @@ export function CommentRichTextEditor({
           <button
             type="submit"
             disabled={submitPending || isEmpty}
-            className="rounded-lg border border-zinc-200 px-2 py-1 text-xs font-medium text-zinc-900 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-100"
+            className={
+              compact
+                ? "rounded-lg border border-zinc-200 px-2 py-1 text-xs font-medium text-zinc-900 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-100"
+                : buttonPrimaryClass
+            }
           >
             {submitPending ? "등록 중..." : submitLabel}
           </button>

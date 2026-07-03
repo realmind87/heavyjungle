@@ -34,7 +34,7 @@ function ensureCaretBlock(editor: HTMLElement): HTMLElement | null {
   const range = getSelectionRange();
   if (!range || !editor.contains(range.commonAncestorContainer)) return null;
 
-  let block = findBlockInEditor(range.commonAncestorContainer, editor);
+  const block = findBlockInEditor(range.commonAncestorContainer, editor);
   if (block !== editor) return block;
 
   const wrapper = document.createElement("div");
