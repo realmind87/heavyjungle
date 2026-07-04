@@ -1,7 +1,8 @@
 name: Deploy to NAS
 
 on:
-  # push 자동 배포는 NAS SSH 포트포워딩/Tailscale 준비 후 활성화
+  push:
+    branches: [main]
   workflow_dispatch:
 
 concurrency:
@@ -18,7 +19,7 @@ jobs:
           host: ${{ secrets.NAS_HOST }}
           username: ${{ secrets.NAS_USER }}
           key: ${{ secrets.NAS_SSH_KEY }}
-          port: ${{ secrets.NAS_PORT }}
+          port: ${{ secrets.NAS_PORT || 22 }}
           script_stop: true
           script: |
             set -eu

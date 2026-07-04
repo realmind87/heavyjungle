@@ -472,6 +472,7 @@ Resend (이메일)
 ```
 
 - **세션** — 32바이트 토큰 → SHA-256 해시 DB, httpOnly 쿠키, sliding renewal
+- **Redis 세션 미러** — `session:t:{hash}` + `session:u:{userId}` (검증 시 join 생략, Redis 장애 시 fail-open)
 - **업로드** — 서버가 presigned PUT URL 발급 → 브라우저가 MinIO에 직접 PUT
 - **커서 페이지네이션** — 정렬별 복합 커서 (`createdAt`+`id`, `likeCount`+`id`)
 - **카운터 캐시** — `view_count`, `like_count`, `comment_count`
@@ -484,9 +485,8 @@ Resend (이메일)
 
 ## 향후 예정
 
-- Redis 세션 미러
-- GitHub Actions 자동 NAS 배포 (SSH 준비 후 `deploy-nas.yml` push 트리거 활성화)
-- ~~본문 HTML 내 `<img>` next/image 변환~~ → `OptimizedHtmlContent` 적용 (게시글·댓글)
+- ~~Redis 세션 미러~~ → `session-cache.ts` (fail-open, sliding renewal 연동)
+- GitHub Actions **main push → NAS 자동 배포** (`deploy-nas.yml`, NAS SSH secrets 필요)
 - E2E 확장 (로그인·글 작성·댓글 플로우)
 
 ---
