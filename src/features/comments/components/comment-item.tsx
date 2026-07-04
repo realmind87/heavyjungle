@@ -5,7 +5,9 @@ import { toast } from "@/components/ui/toast";
 import { deleteComment, type CommentActionState } from "@/features/comments/actions";
 import { CommentComposer } from "@/features/comments/components/comment-composer";
 import { CommentContent } from "@/features/comments/components/comment-content";
+import { CommentLikeButton } from "@/features/comments/components/comment-like-button";
 import { displayCommentContent } from "@/features/comments/display";
+import { ReportButton } from "@/features/reports/components/report-button";
 import { formatRelativeTime } from "@/lib/time";
 import { ProfileAuthorLink } from "@/features/profile/components/ProfileAuthorLink";
 
@@ -15,6 +17,8 @@ export type SerializableComment = {
   parentId: string | null;
   content: string;
   isDeleted: boolean;
+  likeCount: number;
+  liked: boolean;
   createdAt: string;
   author: {
     id: string;
@@ -23,6 +27,7 @@ export type SerializableComment = {
     avatarPublicUrl: string | null;
   };
   canDelete: boolean;
+  canReport: boolean;
 };
 
 export type SerializableCommentNode = SerializableComment & {
@@ -137,6 +142,9 @@ export function CommentNode({ comment, postId, isLoggedIn, depth = 0 }: CommentN
                 <CommentIcon />
               </button>
             )}
+            {comment.canReport && !comment.isDeleted && (
+              <ReportButton targetType="comment" targetId={comment.id} />
+            )}
             {comment.canDelete && !comment.isDeleted && <DeleteCommentButton commentId={comment.id} />}
           </div>
         </div>
@@ -146,6 +154,17 @@ export function CommentNode({ comment, postId, isLoggedIn, depth = 0 }: CommentN
           isDeleted={comment.isDeleted}
           className={`mt-2 pl-8 ${comment.isDeleted ? "italic text-zinc-400 dark:text-zinc-500" : ""}`}
         />
+
+        {!comment.isDeleted && (
+          <div className="pl-8">
+            <CommentLikeButton
+              commentId={comment.id}
+              initialLiked={comment.liked}
+              initialLikeCount={comment.likeCount}
+              isLoggedIn={isLoggedIn}
+            />
+          </div>
+        )}
 
         {showReply && (
           <div className="pl-8">

@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/layout/site-header";
+import { listAdminAuditLogs } from "@/features/admin/audit-log";
 import { AdminPanel } from "@/features/admin/components/admin-panel";
 import { listAdminComments, listAdminPosts, listAdminUsers } from "@/features/admin/queries";
+import { listReports } from "@/features/reports/queries";
 import { linkMutedClass, pageTitleClass } from "@/lib/ui-classes";
 import { getCurrentUser } from "@/server/auth/current-user";
 import { requireAdmin } from "@/server/auth/permissions";
@@ -17,10 +19,12 @@ export default async function AdminPage() {
     redirect("/");
   }
 
-  const [posts, comments, users] = await Promise.all([
+  const [posts, comments, users, auditLogs, reports] = await Promise.all([
     listAdminPosts(),
     listAdminComments(),
     listAdminUsers(),
+    listAdminAuditLogs(),
+    listReports(),
   ]);
 
   return (
@@ -39,6 +43,8 @@ export default async function AdminPage() {
             posts={posts}
             comments={comments}
             users={users}
+            auditLogs={auditLogs}
+            reports={reports}
             currentUserId={user.id}
           />
         </div>

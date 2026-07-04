@@ -4,14 +4,29 @@ import type {
   SearchUsersResponse,
 } from "@/features/search/types";
 
+type SearchFetchOptions = {
+  limit?: number;
+  offset?: number;
+  signal?: AbortSignal;
+};
+
 async function parseJson<T>(response: Response): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+function buildSearchUrl(path: string, query: string, options: SearchFetchOptions = {}) {
+  const params = new URLSearchParams({ q: query });
+  if (options.limit) params.set("limit", String(options.limit));
+  if (options.offset) params.set("offset", String(options.offset));
+  return `${path}?${params.toString()}`;
+}
+
 /** GET /api/search/posts?q= */
-export async function fetchSearchPosts(query: string, signal?: AbortSignal) {
-  const response = await fetch(`/api/search/posts?q=${encodeURIComponent(query)}`, {
-    signal,
+export async function fetchSearchPosts(query: string, signalOrOptions?: AbortSignal | SearchFetchOptions) {
+  const options: SearchFetchOptions =
+    signalOrOptions instanceof AbortSignal ? { signal: signalOrOptions } : (signalOrOptions ?? {});
+  const response = await fetch(buildSearchUrl("/api/search/posts", query, options), {
+    signal: options.signal,
   });
 
   if (!response.ok) {
@@ -23,9 +38,11 @@ export async function fetchSearchPosts(query: string, signal?: AbortSignal) {
 }
 
 /** GET /api/search/users?q= */
-export async function fetchSearchUsers(query: string, signal?: AbortSignal) {
-  const response = await fetch(`/api/search/users?q=${encodeURIComponent(query)}`, {
-    signal,
+export async function fetchSearchUsers(query: string, signalOrOptions?: AbortSignal | SearchFetchOptions) {
+  const options: SearchFetchOptions =
+    signalOrOptions instanceof AbortSignal ? { signal: signalOrOptions } : (signalOrOptions ?? {});
+  const response = await fetch(buildSearchUrl("/api/search/users", query, options), {
+    signal: options.signal,
   });
 
   if (!response.ok) {

@@ -8,6 +8,12 @@ import { clearSessionCookie, getSessionTokenFromCookies, setSessionCookie } from
 import { createSession, deleteSession } from "@/server/auth/session";
 import { db } from "@/server/db";
 import { users } from "@/server/db/schema";
+import {
+  checkRateLimits,
+  getClientIp,
+  hashRateLimitId,
+  rateLimitErrorMessage,
+} from "@/server/rate-limit";
 
 export type AuthActionState = {
   error?: string;
@@ -23,6 +29,14 @@ function getSafeRedirectPath(next: FormDataEntryValue | null): string {
 }
 
 export async function signUp(_prevState: AuthActionState, formData: FormData): Promise<AuthActionState> {
+  const ip = await getClientIp();
+  const ipLimit = await checkRateLimits([
+    { key: `auth:signup:ip:${ip}`, limit: 5, windowSeconds: 60 * 60 },
+  ]);
+  if (!ipLimit.ok) {
+    return { error: rateLimitErrorMessage(ipLimit.retryAfterSeconds) };
+  }
+
   const parsed = signUpSchema.safeParse({
     username: formData.get("username"),
     email: formData.get("email"),
@@ -69,6 +83,15 @@ export async function signIn(_prevState: AuthActionState, formData: FormData): P
   }
 
   const { login, password } = parsed.data;
+  const ip = await getClientIp();
+  const loginKey = hashRateLimitId(login);
+  const rateLimit = await checkRateLimits([
+    { key: `auth:signin:ip:${ip}`, limit: 20, windowSeconds: 15 * 60 },
+    { key: `auth:signin:login:${loginKey}`, limit: 10, windowSeconds: 15 * 60 },
+  ]);
+  if (!rateLimit.ok) {
+    return { error: rateLimitErrorMessage(rateLimit.retryAfterSeconds) };
+  }
 
   const [user] = await db
     .select()

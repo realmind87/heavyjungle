@@ -7,20 +7,40 @@ import {
   setUserRole,
   type AdminActionState,
 } from "@/features/admin/actions";
+import type { AdminAuditLogListItem } from "@/features/admin/audit-log";
 import type {
   AdminCommentListItem,
   AdminPostListItem,
   AdminUserListItem,
 } from "@/features/admin/queries";
+import {
+  dismissReport,
+  resolveReportAndRemoveTarget,
+  type ReportAdminActionState,
+} from "@/features/reports/admin-actions";
+import type { AdminReportListItem } from "@/features/reports/queries";
+import { REPORT_REASON_LABEL } from "@/features/reports/types";
 import { buttonDangerClass, buttonSecondaryClass, errorTextClass } from "@/lib/ui-classes";
 
-type AdminTab = "posts" | "comments" | "users";
+type AdminTab = "posts" | "comments" | "users" | "reports" | "audit-log";
 
 const TABS: Array<{ id: AdminTab; label: string }> = [
   { id: "posts", label: "최신 글" },
   { id: "comments", label: "최신 댓글" },
   { id: "users", label: "사용자" },
+  { id: "reports", label: "신고" },
+  { id: "audit-log", label: "감사 로그" },
 ];
+
+const AUDIT_ACTION_LABEL: Record<AdminAuditLogListItem["action"], string> = {
+  notice_create: "공지 등록",
+  notice_update: "공지 수정",
+  post_delete: "글 강제 삭제",
+  comment_delete: "댓글 강제 삭제",
+  role_change: "권한 변경",
+  report_resolve: "신고 처리 (삭제)",
+  report_dismiss: "신고 기각",
+};
 
 function formatDate(date: Date) {
   return new Intl.DateTimeFormat("ko-KR", {
@@ -217,14 +237,162 @@ function UsersTable({
   );
 }
 
+function ResolveReportButton({ reportId }: { reportId: string }) {
+  const [state, formAction, pending] = useActionState(
+    resolveReportAndRemoveTarget,
+    {} as ReportAdminActionState,
+  );
+
+  return (
+    <form action={formAction} className="inline">
+      <input type="hidden" name="reportId" value={reportId} />
+      {state.error && <p className={`mb-1 ${errorTextClass}`}>{state.error}</p>}
+      <button type="submit" disabled={pending} className={buttonDangerClass}>
+        {pending ? "처리 중..." : "삭제 처리"}
+      </button>
+    </form>
+  );
+}
+
+function DismissReportButton({ reportId }: { reportId: string }) {
+  const [state, formAction, pending] = useActionState(dismissReport, {} as ReportAdminActionState);
+
+  return (
+    <form action={formAction} className="inline">
+      <input type="hidden" name="reportId" value={reportId} />
+      {state.error && <p className={`mb-1 ${errorTextClass}`}>{state.error}</p>}
+      <button type="submit" disabled={pending} className={buttonSecondaryClass}>
+        {pending ? "처리 중..." : "기각"}
+      </button>
+    </form>
+  );
+}
+
+const REPORT_STATUS_LABEL: Record<AdminReportListItem["status"], string> = {
+  pending: "대기 중",
+  resolved: "삭제 처리됨",
+  dismissed: "기각됨",
+};
+
+function ReportsTable({ reports }: { reports: AdminReportListItem[] }) {
+  return (
+    <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-700">
+      <table className="min-w-full text-sm text-zinc-900 dark:text-zinc-100">
+        <thead className="bg-zinc-50 text-left text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
+          <tr>
+            <th className="px-3 py-2 font-medium">대상</th>
+            <th className="px-3 py-2 font-medium">사유</th>
+            <th className="px-3 py-2 font-medium">신고자</th>
+            <th className="px-3 py-2 font-medium">시각</th>
+            <th className="px-3 py-2 font-medium">상태</th>
+            <th className="px-3 py-2 font-medium">작업</th>
+          </tr>
+        </thead>
+        <tbody>
+          {reports.length === 0 ? (
+            <tr>
+              <td colSpan={6} className="px-3 py-8 text-center text-zinc-500 dark:text-zinc-400">
+                신고 내역이 없습니다.
+              </td>
+            </tr>
+          ) : (
+            reports.map((report) => (
+              <tr key={report.id} className="border-t border-zinc-200 dark:border-zinc-800">
+                <td className="max-w-xs px-3 py-2">
+                  {report.post && (
+                    <a href={`/posts/${report.post.id}`} className="hover:underline">
+                      [글] {report.post.title}
+                    </a>
+                  )}
+                  {report.comment && (
+                    <a href={`/posts/${report.comment.postId}`} className="hover:underline">
+                      [댓글] {truncate(report.comment.content, 60)}
+                    </a>
+                  )}
+                  {report.detail && (
+                    <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{report.detail}</p>
+                  )}
+                </td>
+                <td className="px-3 py-2 whitespace-nowrap">{REPORT_REASON_LABEL[report.reason]}</td>
+                <td className="px-3 py-2 whitespace-nowrap">{report.reporter.username}</td>
+                <td className="px-3 py-2 whitespace-nowrap">{formatDate(report.createdAt)}</td>
+                <td className="px-3 py-2 whitespace-nowrap">{REPORT_STATUS_LABEL[report.status]}</td>
+                <td className="px-3 py-2">
+                  {report.status === "pending" && (
+                    <div className="flex items-center gap-2">
+                      <ResolveReportButton reportId={report.id} />
+                      <DismissReportButton reportId={report.id} />
+                    </div>
+                  )}
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function AuditLogTable({ logs }: { logs: AdminAuditLogListItem[] }) {
+  return (
+    <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-700">
+      <table className="min-w-full text-sm text-zinc-900 dark:text-zinc-100">
+        <thead className="bg-zinc-50 text-left text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
+          <tr>
+            <th className="px-3 py-2 font-medium">조치</th>
+            <th className="px-3 py-2 font-medium">대상</th>
+            <th className="px-3 py-2 font-medium">관리자</th>
+            <th className="px-3 py-2 font-medium">시각</th>
+          </tr>
+        </thead>
+        <tbody>
+          {logs.length === 0 ? (
+            <tr>
+              <td colSpan={4} className="px-3 py-8 text-center text-zinc-500 dark:text-zinc-400">
+                기록이 없습니다.
+              </td>
+            </tr>
+          ) : (
+            logs.map((log) => (
+              <tr key={log.id} className="border-t border-zinc-200 dark:border-zinc-800">
+                <td className="px-3 py-2 whitespace-nowrap">{AUDIT_ACTION_LABEL[log.action]}</td>
+                <td className="max-w-xs px-3 py-2">
+                  {log.targetId && log.action.startsWith("notice") ? (
+                    <a href={`/posts/${log.targetId}`} className="hover:underline">
+                      {log.targetLabel ?? log.targetId}
+                    </a>
+                  ) : (
+                    <span>{log.targetLabel ?? log.targetId ?? "-"}</span>
+                  )}
+                  {log.action === "role_change" && log.metadata && (
+                    <span className="ml-1 text-xs text-zinc-500 dark:text-zinc-400">
+                      ({String(log.metadata.from)} → {String(log.metadata.to)})
+                    </span>
+                  )}
+                </td>
+                <td className="px-3 py-2 whitespace-nowrap">{log.actor.username}</td>
+                <td className="px-3 py-2 whitespace-nowrap">{formatDate(log.createdAt)}</td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 type AdminPanelProps = {
   posts: AdminPostListItem[];
   comments: AdminCommentListItem[];
   users: AdminUserListItem[];
+  auditLogs: AdminAuditLogListItem[];
+  reports: AdminReportListItem[];
   currentUserId: string;
 };
 
-export function AdminPanel({ posts, comments, users, currentUserId }: AdminPanelProps) {
+export function AdminPanel({ posts, comments, users, auditLogs, reports, currentUserId }: AdminPanelProps) {
+  const pendingReportCount = reports.filter((report) => report.status === "pending").length;
   const [activeTab, setActiveTab] = useState<AdminTab>("posts");
 
   return (
@@ -249,6 +417,11 @@ export function AdminPanel({ posts, comments, users, currentUserId }: AdminPanel
                 }`}
             >
               {tab.label}
+              {tab.id === "reports" && pendingReportCount > 0 && (
+                <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
+                  {pendingReportCount}
+                </span>
+              )}
               {isActive && (
                 <span className="absolute inset-x-0 -bottom-px h-0.5 bg-zinc-900 dark:bg-zinc-100" />
               )}
@@ -261,6 +434,8 @@ export function AdminPanel({ posts, comments, users, currentUserId }: AdminPanel
         {activeTab === "posts" && <PostsTable posts={posts} />}
         {activeTab === "comments" && <CommentsTable comments={comments} />}
         {activeTab === "users" && <UsersTable users={users} currentUserId={currentUserId} />}
+        {activeTab === "reports" && <ReportsTable reports={reports} />}
+        {activeTab === "audit-log" && <AuditLogTable logs={auditLogs} />}
       </div>
     </div>
   );

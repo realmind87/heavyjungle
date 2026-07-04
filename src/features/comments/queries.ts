@@ -14,6 +14,7 @@ export type CommentFlat = {
   parentId: string | null;
   content: string;
   isDeleted: boolean;
+  likeCount: number;
   createdAt: Date;
   author: {
     id: string;
@@ -38,6 +39,7 @@ export async function getCommentsByPost(postId: string): Promise<CommentFlat[]> 
       parentId: comments.parentId,
       content: comments.content,
       isDeleted: comments.isDeleted,
+      likeCount: comments.likeCount,
       createdAt: comments.createdAt,
       authorId: users.id,
       authorUsername: users.username,
@@ -55,6 +57,7 @@ export async function getCommentsByPost(postId: string): Promise<CommentFlat[]> 
     parentId: row.parentId,
     content: row.content,
     isDeleted: row.isDeleted,
+    likeCount: row.likeCount,
     createdAt: row.createdAt,
     author: {
       id: row.authorId,

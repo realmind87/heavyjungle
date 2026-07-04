@@ -2,6 +2,7 @@
 
 import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { logAdminAction } from "@/features/admin/audit-log";
 import {
   adminDeleteCommentSchema,
   adminDeletePostSchema,
@@ -40,6 +41,14 @@ export async function adminDeletePost(
 
   await db.update(posts).set({ isDeleted: true }).where(eq(posts.id, parsed.data.postId));
 
+  await logAdminAction({
+    actorId: user.id,
+    action: "post_delete",
+    targetId: post.id,
+    targetLabel: post.title,
+    metadata: { authorUsername: post.author.username },
+  });
+
   revalidatePath("/admin");
   revalidatePath("/");
   revalidatePath(`/posts/${parsed.data.postId}`);
@@ -67,9 +76,12 @@ export async function adminDeleteComment(
     .select({
       id: comments.id,
       postId: comments.postId,
+      content: comments.content,
       isDeleted: comments.isDeleted,
+      authorUsername: users.username,
     })
     .from(comments)
+    .innerJoin(users, eq(comments.authorId, users.id))
     .where(eq(comments.id, parsed.data.commentId))
     .limit(1);
 
@@ -88,6 +100,14 @@ export async function adminDeleteComment(
       .update(posts)
       .set({ commentCount: sql`GREATEST(comment_count - 1, 0)` })
       .where(eq(posts.id, comment.postId));
+  });
+
+  await logAdminAction({
+    actorId: user.id,
+    action: "comment_delete",
+    targetId: comment.id,
+    targetLabel: comment.content.replace(/<[^>]+>/g, "").trim().slice(0, 100),
+    metadata: { postId: comment.postId, authorUsername: comment.authorUsername },
   });
 
   revalidatePath("/admin");
@@ -120,7 +140,7 @@ export async function setUserRole(
   }
 
   const [target] = await db
-    .select({ id: users.id })
+    .select({ id: users.id, username: users.username, role: users.role })
     .from(users)
     .where(eq(users.id, userId))
     .limit(1);
@@ -130,6 +150,14 @@ export async function setUserRole(
   }
 
   await db.update(users).set({ role }).where(eq(users.id, userId));
+
+  await logAdminAction({
+    actorId: user.id,
+    action: "role_change",
+    targetId: target.id,
+    targetLabel: target.username,
+    metadata: { from: target.role, to: role },
+  });
 
   revalidatePath("/admin");
   return {};

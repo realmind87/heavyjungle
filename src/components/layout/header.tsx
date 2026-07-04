@@ -7,6 +7,7 @@ import { LoginModal } from "@/components/auth/login-modal";
 import { SignUpModal } from "@/components/auth/signup-modal";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { signOut } from "@/features/auth/actions";
+import { NotificationBell } from "@/features/notifications/components/notification-bell";
 import { SearchBar } from "@/features/search/components/search-bar";
 
 type HeaderUser = {
@@ -167,9 +168,10 @@ function AuthButtons({
 
 type HeaderProps = {
   user: HeaderUser | null;
+  unreadNotificationCount?: number;
 };
 
-export function Header({ user }: HeaderProps) {
+export function Header({ user, unreadNotificationCount = 0 }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [authModal, setAuthModal] = useState<AuthModal>(null);
   const [authNext, setAuthNext] = useState<string | undefined>();
@@ -244,6 +246,7 @@ export function Header({ user }: HeaderProps) {
                 )}
               </svg>
             </button>
+            {user && <NotificationBell initialUnreadCount={unreadNotificationCount} />}
             {user && (
               <Link
                 href="/write"

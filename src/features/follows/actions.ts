@@ -4,6 +4,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { isEitherBlocked } from "@/features/blocks/queries";
+import { createNotification } from "@/features/notifications/create";
 import { requireUser } from "@/server/auth/permissions";
 import { db } from "@/server/db";
 import { follows, users } from "@/server/db/schema";
@@ -77,6 +78,10 @@ export async function toggleFollow(targetUserId: string): Promise<ToggleFollowRe
         followerCount: countRow?.count ?? 0,
       };
     });
+
+    if (result.following) {
+      await createNotification({ recipientId: targetUserId, actorId: user.id, type: "follow" });
+    }
 
     revalidatePath(`/u/${target.username}`);
     revalidatePath(`/u/${user.username}`);

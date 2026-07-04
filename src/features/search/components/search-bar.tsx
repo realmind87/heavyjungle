@@ -3,10 +3,15 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef } from "react";
 import { ProfileAvatar } from "@/features/profile/components/ProfileAvatar";
-import { useSearch } from "@/features/search/use-search";
+import { getSearchQuery, useSearch } from "@/features/search/use-search";
 import type { SearchPost, SearchUser } from "@/features/search/types";
 import { formatRelativeTime } from "@/lib/time";
 import { inputClass, mutedTextClass } from "@/lib/ui-classes";
+
+function buildFullResultsHref(query: string, mode: "post" | "user") {
+  const params = new URLSearchParams({ q: query, type: mode });
+  return `/search?${params.toString()}`;
+}
 
 function highlightText(text: string, query: string) {
   const q = query.trim();
@@ -95,6 +100,14 @@ export function SearchBar({ className = "" }: SearchBarProps) {
     setInput("");
     clearResults();
     router.push(`/u/${user.username}`);
+  }
+
+  function navigateToFullResults() {
+    closeDropdown();
+    const query = getSearchQuery(input, mode);
+    setInput("");
+    clearResults();
+    router.push(buildFullResultsHref(query, mode));
   }
 
   function selectActiveItem() {
@@ -261,6 +274,16 @@ export function SearchBar({ className = "" }: SearchBarProps) {
                 </button>
               );
             })
+          )}
+
+          {!error && !isLoading && (
+            <button
+              type="button"
+              onClick={navigateToFullResults}
+              className="w-full border-t border-zinc-100 px-3 py-2.5 text-left text-sm text-zinc-500 transition hover:bg-zinc-50 hover:text-zinc-700 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800/60 dark:hover:text-zinc-200"
+            >
+              &apos;{queryForHighlight}&apos; 전체 결과 보기
+            </button>
           )}
         </div>
       )}

@@ -10,17 +10,17 @@ import { UserPostsLoadMore } from "@/features/profile/components/UserPostsLoadMo
 import { getPublicProfileByUsername, getUserPosts } from "@/features/profile/queries";
 import { getCurrentUser } from "@/server/auth/current-user";
 import { resolveStoragePublicUrl } from "@/lib/storage-url";
-import { mutedTextClass, pageTitleClass, sectionTitleClass } from "@/lib/ui-classes";
+import { mutedTextClass, pageTitleClass, sectionTitleClass, successTextClass } from "@/lib/ui-classes";
 
 type PageProps = {
   params: Promise<{ username: string }>;
-  searchParams: Promise<{ cursor?: string }>;
+  searchParams: Promise<{ cursor?: string; email?: string }>;
 };
 
 /** 공개 프로필 페이지 — 서버 컴포넌트 */
 export default async function PublicProfilePage({ params, searchParams }: PageProps) {
   const { username } = await params;
-  const { cursor } = await searchParams;
+  const { cursor, email } = await searchParams;
 
   const [profile, currentUser] = await Promise.all([
     getPublicProfileByUsername(username),
@@ -56,6 +56,9 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
     <div className="min-h-screen">
       <SiteHeader />
       <main className="mx-auto max-w-3xl px-4 py-8">
+        {isOwner && email === "updated" && (
+          <p className={`mb-6 ${successTextClass}`}>이메일이 변경되었습니다.</p>
+        )}
         <div className="flex items-start gap-4">
           <ProfileAvatar
             name={displayName}

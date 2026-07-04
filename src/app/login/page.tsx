@@ -6,11 +6,11 @@ import { signIn } from "@/features/auth/actions";
 import { inputClass, labelClass, pageTitleClass, successTextClass } from "@/lib/ui-classes";
 
 type PageProps = {
-  searchParams: Promise<{ next?: string; reset?: string }>;
+  searchParams: Promise<{ next?: string; reset?: string; email?: string }>;
 };
 
 export default async function LoginPage({ searchParams }: PageProps) {
-  const { next, reset } = await searchParams;
+  const { next, reset, email } = await searchParams;
 
   return (
     <div className="min-h-screen">
@@ -19,6 +19,9 @@ export default async function LoginPage({ searchParams }: PageProps) {
         <h1 className={`mb-6 text-center ${pageTitleClass}`}>로그인</h1>
         {reset === "success" && (
           <p className={`mb-4 text-center ${successTextClass}`}>비밀번호가 변경되었습니다. 다시 로그인해 주세요.</p>
+        )}
+        {email === "updated" && (
+          <p className={`mb-4 text-center ${successTextClass}`}>이메일이 변경되었습니다. 새 이메일로 로그인해 주세요.</p>
         )}
         <AuthForm action={signIn} submitLabel="로그인" next={next}>
           <label className="block">

@@ -1,4 +1,4 @@
-import { type AnyPgColumn, boolean, index, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { type AnyPgColumn, boolean, index, integer, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { posts } from "./posts";
 import { users } from "./users";
 
@@ -17,6 +17,8 @@ export const comments = pgTable(
      */
     parentId: uuid("parent_id").references((): AnyPgColumn => comments.id, { onDelete: "cascade" }),
     content: text("content").notNull(),
+    /** 좋아요 수 캐시 — comment_likes 집계 대신 렌더에 사용 */
+    likeCount: integer("like_count").notNull().default(0),
     /** soft delete — 내용만 숨기고 스레드 구조는 유지 */
     isDeleted: boolean("is_deleted").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

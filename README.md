@@ -23,9 +23,14 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
 - **아이디 찾기** — 가입 이메일로 아이디 안내 메일 (`/login/find-username`)
   - 미등록 이메일이면 `"등록된 이메일이 아닙니다."` 오류 표시
 - **비밀번호 찾기** — 재설정 링크 메일 발송, 1시간 유효 토큰 (`/login/forgot-password` → `/reset-password`)
+  - 미등록 이메일 / 소셜 로그인 등 비밀번호 없는 계정 각각 안내 메시지 구분
+- **이메일 변경 인증** — 새 이메일로 확인 링크 발송 → `/confirm-email-change?token=` 확인 후 반영
+  - `email_change_tokens` 테이블(해시 저장, 만료 시간)
 - 프로필 비밀번호·이메일 변경 (`/u/[username]/settings/...`)
 - **관리자 권한** — `users.role` (`user` \| `admin`) + `ADMIN_USERNAMES` 환경 변수 병행
 - 관리자 계정 생성·승격 스크립트 (`scripts/create-admin-user.mjs`, `scripts/nas-promote-admin.sh`)
+- **레이트 리미팅** (Redis 고정 윈도우, 장애 시 fail-open)
+  - 로그인 IP/계정, 회원가입 IP, 아이디·비밀번호 찾기, 업로드, 신고 등 주요 액션에 적용
 
 ### 게시글
 
@@ -75,7 +80,24 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
 ### 좋아요 · 조회수
 
 - 글 좋아요 토글 (`useOptimistic`)
+- **댓글 좋아요** — 하트 아이콘 토글, `useOptimistic`, `comments.like_count` 카운터 캐시
 - 조회수 증가 API (`PostViewCount`)
+
+### 신고 · 모더레이션
+
+- 글/댓글 **신고** 버튼 — 사유 선택(스팸·욕설·음란물·기타) + 상세 사유 입력
+- 자기 글 신고 불가, 중복 신고 방지, IP/계정 기준 레이트 리미팅(시간당 20/10회)
+- **관리자 신고함** (`/admin` → 신고 탭) — 대기 중 신고 우선 정렬, 미해결 건수 배지
+  - **해결** — 대상 글/댓글 소프트 삭제 + 신고 상태 변경
+  - **기각** — 신고 상태만 변경
+  - 처리 내역은 관리자 감사 로그에 자동 기록
+
+### 알림
+
+- 헤더 **알림 벨** — 안 읽은 개수 배지, 클릭 시 목록 표시 + 전체 읽음 처리
+- 트리거: 팔로우, 댓글, 대댓글, 글 좋아요, 댓글 좋아요
+- 자기 자신 알림·차단 관계 알림 제외
+- 알림 클릭 시 해당 글/프로필로 이동
 
 ### 팔로우 · 팔로잉
 
@@ -105,21 +127,25 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
 - 프로필 수정 — 표시 이름·소개·아바타 (모달 / 풀페이지)
 - MinIO(S3) presigned URL 아바타 업로드
 
-### 검색 (헤더)
+### 검색
 
-- **게시글 검색** — 제목 부분 일치, 300ms debounce, 자동완성 드롭다운
-  - 제목(검색어 하이라이트)·작성자·작성일 → `/posts/[id]`
-- **@유저 검색** — `@`로 시작하면 유저 모드
-  - 닉네임/아이디 부분 일치 → `/u/[username]`
-- ↑↓ / Enter / ESC, 외부 클릭 닫기, 로딩 스피너, AbortController
-- `SearchBar` + `useSearch` + `/api/search/posts` · `/api/search/users`
+- **헤더 드롭다운** — 300ms debounce 자동완성, ↑↓ / Enter / ESC, 외부 클릭 닫기, 로딩 스피너, AbortController
+  - **게시글 검색** — 제목(하이라이트)·작성자·작성일 → `/posts/[id]`
+  - **@유저 검색** — `@`로 시작하면 유저 모드, 닉네임/아이디 부분 일치 → `/u/[username]`
+  - 드롭다운 하단 **"전체 결과 보기"** → `/search`
+  - 차단 관계인 작성자/사용자는 결과에서 제외
+- **`/search` 전체 결과 페이지** — 게시글 / 사용자 탭, "더 보기" 페이지네이션
+  - 게시글: **제목 + 본문** 검색 (HTML 태그 제거 후 매칭), 검색어 주변 문맥 스니펫 하이라이트
+- `SearchBar` + `useSearch` + `/api/search/posts` · `/api/search/users` (limit/offset)
 
 ### 관리자 (`/admin`)
 
 - 관리자 전용 (로그인 + `role=admin` 또는 `ADMIN_USERNAMES`)
-- 탭: **최신 글** / **최신 댓글** / **사용자**
-- 글·댓글 삭제, 사용자 role 변경 (`user` ↔ `admin`)
+- 탭: **최신 글** / **최신 댓글** / **사용자** / **신고** / **감사 로그**
+- 글·댓글 삭제, 사용자 role 변경 (`user` ↔ `admin`), 신고 해결/기각
 - 헤더 프로필 메뉴에 관리자 링크 (관리자만)
+- **감사 로그** — 공지 등록/수정, 글·댓글 삭제, role 변경, 신고 해결/기각 등 관리자 행위 기록
+  - 행위자·대상·메타데이터·시각 표시
 
 ### UI · 브랜딩
 
@@ -196,13 +222,15 @@ src/
 │   ├── likes/
 │   ├── follows/              # 팔로우·팔로워/팔로잉 목록
 │   ├── blocks/               # 차단
-│   ├── search/               # SearchBar, useSearch, API
+│   ├── search/               # SearchBar, useSearch, API, /search 결과 페이지
 │   ├── profile/              # 프로필·설정 메뉴
 │   ├── uploads/
-│   └── admin/
-├── server/                   # DB schema (follows, blocks, posts.category), auth, email, storage
+│   ├── notifications/        # 알림 조회·생성·벨 UI
+│   ├── reports/              # 신고 액션·관리자 처리·UI
+│   └── admin/                # 관리자 액션, 감사 로그
+├── server/                   # DB schema, auth, email, storage, rate-limit(Redis)
 ├── lib/
-└── db/migrations/            # 0010 follows, 0011 blocks, 0012 post_category
+└── db/migrations/            # 0013 email_change_tokens ... 0018 comment_likes
 ```
 
 ---
@@ -266,6 +294,8 @@ npm run db:migrate   # 마이그레이션
 | `/u/[username]/followers` | 팔로워 (모달/풀페이지) |
 | `/u/[username]/following` | 팔로잉 (모달/풀페이지) |
 | `/u/[username]/edit` | 프로필 수정 |
+| `/confirm-email-change?token=` | 이메일 변경 인증 확인 |
+| `/search?q=&type=` | 검색 전체 결과 (게시글/사용자) |
 
 ---
 
@@ -366,8 +396,10 @@ git pull origin main
 | `GET` | `/api/posts` | 글 목록 (데모) |
 | `POST` | `/api/posts/[id]/like` | 좋아요 토글 |
 | `POST` | `/api/posts/[id]/view` | 조회수 증가 |
-| `GET` | `/api/search/posts?q=` | 게시글 제목 검색 |
-| `GET` | `/api/search/users?q=` | 유저 닉네임/아이디 검색 |
+| `GET` | `/api/search/posts?q=&limit=&offset=` | 게시글 제목/본문 검색 (페이지네이션) |
+| `GET` | `/api/search/users?q=&limit=&offset=` | 유저 닉네임/아이디 검색 (페이지네이션) |
+| `GET` | `/api/notifications` | 알림 목록·안읽음 개수 |
+| `POST` | `/api/comments/[id]/like` | 댓글 좋아요 토글 |
 | `GET/POST` | `/api/items` | CRUD 데모 |
 
 ---
@@ -395,13 +427,14 @@ Resend (이메일)
 - **카운터 캐시** — `view_count`, `like_count`, `comment_count`
 - **소셜** — `follows`, `blocks` 테이블, 피드·상호작용에서 차단 관계 반영
 - **공지** — `posts.category` (`general` \| `notice`)
+- **알림/신고** — `notifications`, `reports`, `admin_audit_logs` 테이블
+- **레이트 리미팅** — Redis `INCR` + `EXPIRE` 고정 윈도우, Redis 장애 시 fail-open
 
 ---
 
 ## 향후 예정
 
-- 댓글 좋아요, 신고, 알림
-- Redis 세션 미러·레이트 리미팅
+- Redis 세션 미러
 - GitHub Actions 자동 NAS 배포
 
 ---

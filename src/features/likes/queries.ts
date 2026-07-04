@@ -5,7 +5,7 @@ import "server-only";
 
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/server/db";
-import { likes } from "@/server/db/schema";
+import { commentLikes, comments, likes } from "@/server/db/schema";
 
 export async function getUserLikeForPost(userId: string, postId: string): Promise<boolean> {
   const [row] = await db
@@ -30,4 +30,15 @@ export async function getUserLikesForPosts(
     .where(and(eq(likes.userId, userId), inArray(likes.postId, postIds)));
 
   return new Set(rows.map((r) => r.postId));
+}
+
+/** 글 상세용 — 해당 글의 댓글 중 현재 유저가 좋아요한 댓글 ID 집합 */
+export async function getUserCommentLikesForPost(userId: string, postId: string): Promise<Set<string>> {
+  const rows = await db
+    .select({ commentId: commentLikes.commentId })
+    .from(commentLikes)
+    .innerJoin(comments, eq(commentLikes.commentId, comments.id))
+    .where(and(eq(commentLikes.userId, userId), eq(comments.postId, postId)));
+
+  return new Set(rows.map((r) => r.commentId));
 }

@@ -3,6 +3,7 @@
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { logAdminAction } from "@/features/admin/audit-log";
 import { getPostById } from "@/features/posts/queries";
 import {
   createPostFormSchema,
@@ -64,6 +65,15 @@ export async function createPost(
     .values({ authorId: user.id, title, content, category })
     .returning({ id: posts.id });
 
+  if (category === "notice") {
+    await logAdminAction({
+      actorId: user.id,
+      action: "notice_create",
+      targetId: post.id,
+      targetLabel: title,
+    });
+  }
+
   revalidatePath("/");
   redirect(`/posts/${post.id}`);
 }
@@ -119,6 +129,19 @@ export async function updatePost(
     .update(posts)
     .set({ title, content, category: nextCategory })
     .where(eq(posts.id, postId));
+
+  if (userIsAdmin && (nextCategory === "notice" || post.category === "notice")) {
+    await logAdminAction({
+      actorId: user.id,
+      action: "notice_update",
+      targetId: postId,
+      targetLabel: title,
+      metadata:
+        post.category !== nextCategory
+          ? { categoryFrom: post.category, categoryTo: nextCategory }
+          : undefined,
+    });
+  }
 
   revalidatePath(`/posts/${postId}`);
   revalidatePath("/");

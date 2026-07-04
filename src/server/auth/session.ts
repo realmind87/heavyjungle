@@ -40,8 +40,6 @@ export async function createSession(userId: string): Promise<string> {
 
   // TODO(cache): Redis에 session:{tokenHash} → userId 미러 (선택)
 
-  // TODO(rate-limit): ioredis로 signIn/signUp IP·계정별 레이트 리미팅 (다음 단계)
-
   return token;
 }
 

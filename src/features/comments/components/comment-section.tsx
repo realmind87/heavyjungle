@@ -4,6 +4,7 @@
 import { getCommentTreeByPost, type CommentFlat, type CommentNode } from "@/features/comments/queries";
 import { CommentForm } from "@/features/comments/components/comment-form";
 import { CommentThread, type SerializableCommentNode } from "@/features/comments/components/comment-item";
+import { getUserCommentLikesForPost } from "@/features/likes/queries";
 import { canModifyComment } from "@/server/auth/permissions";
 import type { User } from "@/server/db/schema/users";
 import { mutedTextClass } from "@/lib/ui-classes";
@@ -14,13 +15,19 @@ type CommentSectionProps = {
   user: User | null;
 };
 
-function serializeComment(comment: CommentFlat, user: User | null): SerializableCommentNode {
+function serializeComment(
+  comment: CommentFlat,
+  user: User | null,
+  likedCommentIds: Set<string>,
+): SerializableCommentNode {
   return {
     id: comment.id,
     postId: comment.postId,
     parentId: comment.parentId,
     content: comment.content,
     isDeleted: comment.isDeleted,
+    likeCount: comment.likeCount,
+    liked: likedCommentIds.has(comment.id),
     createdAt: comment.createdAt.toISOString(),
     author: {
       id: comment.author.id,
@@ -29,20 +36,28 @@ function serializeComment(comment: CommentFlat, user: User | null): Serializable
       avatarPublicUrl: resolveStoragePublicUrl(comment.author.avatarUrl),
     },
     canDelete: canModifyComment(user, comment.author.id),
+    canReport: !!user && user.id !== comment.author.id,
     replies: [],
   };
 }
 
-function serializeTree(nodes: CommentNode[], user: User | null): SerializableCommentNode[] {
+function serializeTree(
+  nodes: CommentNode[],
+  user: User | null,
+  likedCommentIds: Set<string>,
+): SerializableCommentNode[] {
   return nodes.map((node) => ({
-    ...serializeComment(node, user),
-    replies: serializeTree(node.replies, user),
+    ...serializeComment(node, user, likedCommentIds),
+    replies: serializeTree(node.replies, user, likedCommentIds),
   }));
 }
 
 export async function CommentSection({ postId, user }: CommentSectionProps) {
-  const tree = await getCommentTreeByPost(postId);
-  const serialized = serializeTree(tree, user);
+  const [tree, likedCommentIds] = await Promise.all([
+    getCommentTreeByPost(postId),
+    user ? getUserCommentLikesForPost(user.id, postId) : Promise.resolve(new Set<string>()),
+  ]);
+  const serialized = serializeTree(tree, user, likedCommentIds);
 
   return (
     <section className="mt-10 dark:border-zinc-800">

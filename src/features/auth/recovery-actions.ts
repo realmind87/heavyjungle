@@ -15,14 +15,18 @@ import { deleteAllUserSessions } from "@/server/auth/session";
 import { db } from "@/server/db";
 import { passwordResetTokens, users } from "@/server/db/schema";
 import { sendEmail } from "@/server/email/send-email";
+import {
+  checkRateLimits,
+  getClientIp,
+  hashRateLimitId,
+  rateLimitErrorMessage,
+} from "@/server/rate-limit";
 
 export type RecoveryActionState = {
   error?: string;
   success?: boolean;
   message?: string;
 };
-
-const EMAIL_SENT_MESSAGE = "등록된 이메일이면 안내 메일을 보냈습니다.";
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
 
@@ -59,6 +63,15 @@ export async function findUsername(
   }
 
   const { email } = parsed.data;
+  const ip = await getClientIp();
+  const emailKey = hashRateLimitId(email);
+  const rateLimit = await checkRateLimits([
+    { key: `auth:find-username:ip:${ip}`, limit: 5, windowSeconds: 60 * 60 },
+    { key: `auth:find-username:email:${emailKey}`, limit: 3, windowSeconds: 60 * 60 },
+  ]);
+  if (!rateLimit.ok) {
+    return { error: rateLimitErrorMessage(rateLimit.retryAfterSeconds) };
+  }
 
   const [user] = await db
     .select({ username: users.username })
@@ -97,6 +110,15 @@ export async function requestPasswordReset(
   }
 
   const { email } = parsed.data;
+  const ip = await getClientIp();
+  const emailKey = hashRateLimitId(email);
+  const rateLimit = await checkRateLimits([
+    { key: `auth:reset-request:ip:${ip}`, limit: 5, windowSeconds: 60 * 60 },
+    { key: `auth:reset-request:email:${emailKey}`, limit: 3, windowSeconds: 60 * 60 },
+  ]);
+  if (!rateLimit.ok) {
+    return { error: rateLimitErrorMessage(rateLimit.retryAfterSeconds) };
+  }
 
   const [user] = await db
     .select({ id: users.id, passwordHash: users.passwordHash })
@@ -104,29 +126,43 @@ export async function requestPasswordReset(
     .where(eq(users.email, email))
     .limit(1);
 
-  if (user?.passwordHash) {
-    try {
-      const token = await createPasswordResetToken(user.id);
-      const resetUrl = `${env.APP_URL}/reset-password?token=${encodeURIComponent(token)}`;
-
-      await sendEmail({
-        to: email,
-        subject: "[Heavy Jungle] 비밀번호 재설정",
-        text: `아래 링크에서 비밀번호를 재설정할 수 있습니다. (1시간 유효)\n\n${resetUrl}`,
-        html: `<p>아래 링크에서 비밀번호를 재설정할 수 있습니다. (1시간 유효)</p><p><a href="${resetUrl}">${resetUrl}</a></p>`,
-      });
-    } catch {
-      return { error: "메일 발송에 실패했습니다. 잠시 후 다시 시도해 주세요." };
-    }
+  if (!user) {
+    return { error: "등록된 이메일이 아닙니다." };
   }
 
-  return { success: true, message: EMAIL_SENT_MESSAGE };
+  if (!user.passwordHash) {
+    return { error: "소셜 로그인 등 비밀번호가 없는 계정입니다." };
+  }
+
+  try {
+    const token = await createPasswordResetToken(user.id);
+    const resetUrl = `${env.APP_URL}/reset-password?token=${encodeURIComponent(token)}`;
+
+    await sendEmail({
+      to: email,
+      subject: "[Heavy Jungle] 비밀번호 재설정",
+      text: `아래 링크에서 비밀번호를 재설정할 수 있습니다. (1시간 유효)\n\n${resetUrl}`,
+      html: `<p>아래 링크에서 비밀번호를 재설정할 수 있습니다. (1시간 유효)</p><p><a href="${resetUrl}">${resetUrl}</a></p>`,
+    });
+  } catch {
+    return { error: "메일 발송에 실패했습니다. 잠시 후 다시 시도해 주세요." };
+  }
+
+  return { success: true, message: "입력하신 이메일로 비밀번호 재설정 링크를 발송했습니다." };
 }
 
 export async function resetPassword(
   _prevState: RecoveryActionState,
   formData: FormData,
 ): Promise<RecoveryActionState> {
+  const ip = await getClientIp();
+  const ipLimit = await checkRateLimits([
+    { key: `auth:reset-password:ip:${ip}`, limit: 10, windowSeconds: 60 * 60 },
+  ]);
+  if (!ipLimit.ok) {
+    return { error: rateLimitErrorMessage(ipLimit.retryAfterSeconds) };
+  }
+
   const parsed = resetPasswordSchema.safeParse({
     token: formData.get("token"),
     password: formData.get("password"),

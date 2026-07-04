@@ -3,6 +3,7 @@
 import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { isEitherBlocked } from "@/features/blocks/queries";
+import { createNotification } from "@/features/notifications/create";
 import { getPostById } from "@/features/posts/queries";
 import { requireUser } from "@/server/auth/permissions";
 import { db } from "@/server/db";
@@ -72,6 +73,15 @@ export async function toggleLike(postId: string): Promise<ToggleLikeResult> {
         likeCount: updated?.likeCount ?? post.likeCount,
       };
     });
+
+    if (result.liked) {
+      await createNotification({
+        recipientId: post.author.id,
+        actorId: user.id,
+        type: "like",
+        postId,
+      });
+    }
 
     return result;
   } catch {

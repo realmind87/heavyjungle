@@ -36,9 +36,26 @@ import {
   isOwnedPostImageKey,
 } from "@/lib/storage-url";
 import { requireUser } from "@/server/auth/permissions";
+import {
+  checkRateLimits,
+  getClientIp,
+  rateLimitErrorMessage,
+} from "@/server/rate-limit";
 import { createPresignedPutUrl, deleteObject, headObject } from "@/server/storage/s3";
 import { db } from "@/server/db";
 import { users } from "@/server/db/schema";
+
+async function assertUploadRateLimit(userId: string): Promise<string | null> {
+  const ip = await getClientIp();
+  const rateLimit = await checkRateLimits([
+    { key: `upload:ip:${ip}`, limit: 60, windowSeconds: 60 },
+    { key: `upload:user:${userId}`, limit: 30, windowSeconds: 60 },
+  ]);
+  if (!rateLimit.ok) {
+    return rateLimitErrorMessage(rateLimit.retryAfterSeconds);
+  }
+  return null;
+}
 
 export type AvatarUploadUrlResult =
   | { error: string }
@@ -72,7 +89,8 @@ export async function createAvatarUploadUrl(input: {
     return { error: "로그인이 필요합니다." };
   }
 
-  // TODO(rate-limit): ioredis로 presigned URL 발급 IP·계정별 레이트 리미팅
+  const limited = await assertUploadRateLimit(user.id);
+  if (limited) return { error: limited };
 
   const parsed = avatarUploadIntentSchema.safeParse(input);
   if (!parsed.success) {
@@ -159,6 +177,9 @@ export async function createCommentImageUploadUrl(input: {
     return { error: "로그인이 필요합니다." };
   }
 
+  const limited = await assertUploadRateLimit(user.id);
+  if (limited) return { error: limited };
+
   const parsed = commentImageUploadIntentSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "입력값을 확인해 주세요." };
@@ -189,6 +210,9 @@ export async function createPostImageUploadUrl(input: {
     return { error: "로그인이 필요합니다." };
   }
 
+  const limited = await assertUploadRateLimit(user.id);
+  if (limited) return { error: limited };
+
   const parsed = postImageUploadIntentSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "입력값을 확인해 주세요." };
@@ -218,6 +242,9 @@ export async function createPostVideoUploadUrl(input: {
   if (!user) {
     return { error: "로그인이 필요합니다." };
   }
+
+  const limited = await assertUploadRateLimit(user.id);
+  if (limited) return { error: limited };
 
   const parsed = postVideoUploadIntentSchema.safeParse(input);
   if (!parsed.success) {

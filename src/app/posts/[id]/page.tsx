@@ -11,6 +11,7 @@ import { PostDeleteButton } from "@/features/posts/components/post-delete-button
 import { PostViewCount } from "@/features/posts/components/post-view-count";
 import { getPostById } from "@/features/posts/queries";
 import { ProfileAuthorLink } from "@/features/profile/components/ProfileAuthorLink";
+import { ReportButton } from "@/features/reports/components/report-button";
 import { resolveStoragePublicUrl } from "@/lib/storage-url";
 import { formatRelativeTime } from "@/lib/time";
 import { canModifyPost } from "@/server/auth/permissions";
@@ -63,6 +64,7 @@ export default async function PostDetailPage({ params, searchParams }: PageProps
 
   const liked = user ? await getUserLikeForPost(user.id, postId) : false;
   const canEdit = canModifyPost(user, post.author.id);
+  const canReport = !!user && user.id !== post.author.id;
 
   return (
     <div className="min-h-screen">
@@ -93,6 +95,12 @@ export default async function PostDetailPage({ params, searchParams }: PageProps
                   <EditIcon />
                 </Link>
                 <PostDeleteButton postId={postId} />
+              </div>
+            )}
+
+            {!canEdit && canReport && (
+              <div className="ml-auto">
+                <ReportButton targetType="post" targetId={postId} />
               </div>
             )}
           </div>

@@ -4,6 +4,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { isEitherBlocked } from "@/features/blocks/queries";
 import { createCommentSchema, deleteCommentSchema } from "@/features/comments/validators";
+import { createNotification } from "@/features/notifications/create";
 import { getPostById } from "@/features/posts/queries";
 import { isCommentHtmlEmpty } from "@/lib/sanitize-comment-html";
 import { sanitizeCommentHtml } from "@/lib/sanitize-comment-html.server";
@@ -51,6 +52,9 @@ export async function createComment(
     return { error: "차단된 사용자와는 댓글을 주고받을 수 없습니다." };
   }
 
+  let newCommentId: string | undefined;
+  let parentAuthorId: string | undefined;
+
   try {
     await db.transaction(async (tx) => {
       const [existingPost] = await tx
@@ -65,7 +69,7 @@ export async function createComment(
 
       if (parentId) {
         const [parent] = await tx
-          .select({ id: comments.id, parentId: comments.parentId })
+          .select({ id: comments.id, parentId: comments.parentId, authorId: comments.authorId })
           .from(comments)
           .where(and(eq(comments.id, parentId), eq(comments.postId, postId)))
           .limit(1);
@@ -73,14 +77,19 @@ export async function createComment(
         if (!parent) {
           throw new Error("PARENT_NOT_FOUND");
         }
+        parentAuthorId = parent.authorId;
       }
 
-      await tx.insert(comments).values({
-        postId,
-        parentId: parentId ?? null,
-        authorId: user.id,
-        content,
-      });
+      const [inserted] = await tx
+        .insert(comments)
+        .values({
+          postId,
+          parentId: parentId ?? null,
+          authorId: user.id,
+          content,
+        })
+        .returning({ id: comments.id });
+      newCommentId = inserted?.id;
 
       await tx
         .update(posts)
@@ -97,6 +106,24 @@ export async function createComment(
       }
     }
     throw error;
+  }
+
+  if (parentAuthorId) {
+    await createNotification({
+      recipientId: parentAuthorId,
+      actorId: user.id,
+      type: "reply",
+      postId,
+      commentId: newCommentId,
+    });
+  } else {
+    await createNotification({
+      recipientId: post.author.id,
+      actorId: user.id,
+      type: "comment",
+      postId,
+      commentId: newCommentId,
+    });
   }
 
   revalidatePath(`/posts/${postId}`);
