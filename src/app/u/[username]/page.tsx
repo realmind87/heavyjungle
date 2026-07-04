@@ -9,6 +9,7 @@ import { ProfileSettingsMenu } from "@/features/profile/components/ProfileSettin
 import { UserPostsLoadMore } from "@/features/profile/components/UserPostsLoadMore";
 import { getPublicProfileByUsername, getUserPosts } from "@/features/profile/queries";
 import { getCurrentUser } from "@/server/auth/current-user";
+import { isAdmin } from "@/server/auth/permissions";
 import { resolveStoragePublicUrl } from "@/lib/storage-url";
 import { mutedTextClass, pageTitleClass, sectionTitleClass, successTextClass } from "@/lib/ui-classes";
 
@@ -77,6 +78,7 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
                 isOwner={isOwner}
                 hasPassword={!!currentUser?.passwordHash}
                 isLoggedIn={!!currentUser}
+                isAdmin={isOwner && !!currentUser && isAdmin(currentUser)}
                 isBlocking={blockRelation.isBlocking}
                 likesReceived={canViewContent ? profile.stats.likesReceived : 0}
                 createdAt={profile.createdAt.toISOString()}

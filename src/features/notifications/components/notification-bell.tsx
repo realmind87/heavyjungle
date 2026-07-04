@@ -109,7 +109,7 @@ export function NotificationBell({ initialUnreadCount }: NotificationBellProps) 
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full z-50 mt-2 max-h-96 w-80 overflow-y-auto rounded-xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+        <div className="absolute right-0 top-full z-50 mt-2 max-h-96 w-80 max-w-[calc(100vw-1rem)] overflow-y-auto rounded-xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
           <div className="border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
             <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">알림</p>
           </div>

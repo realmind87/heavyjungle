@@ -98,9 +98,11 @@ type ReportButtonProps = {
   targetType: "post" | "comment";
   targetId: string;
   className?: string;
+  /** 아이콘 옆에 표시할 텍스트 (예: "신고") */
+  label?: string;
 };
 
-export function ReportButton({ targetType, targetId, className }: ReportButtonProps) {
+export function ReportButton({ targetType, targetId, className, label }: ReportButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -115,6 +117,7 @@ export function ReportButton({ targetType, targetId, className }: ReportButtonPr
         }
       >
         <ReportIcon />
+        {label && <span>{label}</span>}
       </button>
 
       {isOpen && <ReportModal targetType={targetType} targetId={targetId} onClose={() => setIsOpen(false)} />}

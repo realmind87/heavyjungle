@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SiteHeader } from "@/components/layout/site-header";
-import { PostMetaChip } from "@/components/posts/post-meta-chip";
+import { PostMetaChip, postMetaChipClass } from "@/components/posts/post-meta-chip";
 import { isEitherBlocked } from "@/features/blocks/queries";
 import { CommentSection } from "@/features/comments/components/comment-section";
 import { LikeButton } from "@/features/likes/components/like-button";
@@ -98,11 +98,6 @@ export default async function PostDetailPage({ params, searchParams }: PageProps
               </div>
             )}
 
-            {!canEdit && canReport && (
-              <div className="ml-auto">
-                <ReportButton targetType="post" targetId={postId} />
-              </div>
-            )}
           </div>
 
           <h1 className={`mt-3 ${pageTitleClass}`}>{post.title}</h1>
@@ -123,6 +118,14 @@ export default async function PostDetailPage({ params, searchParams }: PageProps
             <CommentIcon />
             {post.commentCount}
           </PostMetaChip>
+          {canReport && (
+            <ReportButton
+              targetType="post"
+              targetId={postId}
+              label="신고"
+              className={`${postMetaChipClass} ml-auto transition hover:border-red-300 hover:text-red-600 dark:hover:border-red-800 dark:hover:text-red-400`}
+            />
+          )}
         </div>
 
         <CommentSection postId={postId} user={user} />

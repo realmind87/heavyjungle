@@ -36,8 +36,8 @@ export default async function HomePage({ searchParams }: PageProps) {
     <div className="min-h-screen">
       <SiteHeader />
       <main className="mx-auto max-w-6xl px-4 py-8">
-        <section className="flex gap-8 w-full">
-          <div className="mt-4 min-w-0 flex-1">
+        <section className="flex flex-col gap-6 lg:flex-row lg:gap-8 w-full">
+          <div className="min-w-0 flex-1 lg:mt-4">
             <PostList posts={postsPage.items} listState={listState} />
             <LoadMorePosts nextCursor={postsPage.nextCursor} listState={listState} />
           </div>

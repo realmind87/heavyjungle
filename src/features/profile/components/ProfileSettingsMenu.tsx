@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { toast } from "@/components/ui/toast";
+import { signOut } from "@/features/auth/actions";
 import { blockUser, unblockUser } from "@/features/blocks/actions";
 import type { FollowUserSummary } from "@/features/follows/types";
 import { ProfileAvatar } from "@/features/profile/components/ProfileAvatar";
@@ -19,6 +20,8 @@ type ProfileSettingsMenuProps = {
   isBlocking: boolean;
   likesReceived: number;
   createdAt: string;
+  /** 본인 프로필이고 관리자일 때 — 관리자 링크 노출 */
+  isAdmin?: boolean;
   /** 본인 프로필일 때만 — 차단한 사용자 목록 */
   blockedUsers?: FollowUserSummary[];
 };
@@ -68,6 +71,7 @@ export function ProfileSettingsMenu({
   isBlocking,
   likesReceived,
   createdAt,
+  isAdmin = false,
   blockedUsers = [],
 }: ProfileSettingsMenuProps) {
   const router = useRouter();
@@ -280,6 +284,23 @@ export function ProfileSettingsMenu({
                       <ChevronIcon />
                     </span>
                   </button>
+                </li>
+
+                {isAdmin && (
+                  <li>
+                    <Link href="/admin" onClick={closeMenu} className={menuItemClass}>
+                      <span>관리자</span>
+                      <ChevronIcon />
+                    </Link>
+                  </li>
+                )}
+
+                <li className="mt-1 border-t border-zinc-200 pt-1 dark:border-zinc-800">
+                  <form action={signOut}>
+                    <button type="submit" className={`${menuItemClass} text-red-600 dark:text-red-400`}>
+                      <span>로그아웃</span>
+                    </button>
+                  </form>
                 </li>
               </>
             )}

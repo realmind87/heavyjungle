@@ -166,24 +166,65 @@ function AuthButtons({
   );
 }
 
+function LogoLink({ heightClass, className = "" }: { heightClass: string; className?: string }) {
+  return (
+    <Link href="/" className={`inline-flex shrink-0 items-center ${className}`} aria-label="Heavy Jungle 홈">
+      <Image
+        src="/logo/logo.png"
+        alt="Heavy Jungle"
+        width={1019}
+        height={210}
+        className={`${heightClass} w-auto dark:hidden`}
+        priority
+      />
+      <Image
+        src="/logo/logo_dark.png"
+        alt="Heavy Jungle"
+        width={1019}
+        height={210}
+        className={`hidden ${heightClass} w-auto dark:block`}
+        priority
+      />
+    </Link>
+  );
+}
+
+function WriteButton() {
+  return (
+    <Link
+      href="/write"
+      aria-label="글쓰기"
+      className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-500 text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-800"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="h-4 w-4 shrink-0"
+        aria-hidden="true"
+      >
+        <path strokeLinecap="round" d="M12 5v14M5 12h14" />
+      </svg>
+    </Link>
+  );
+}
+
 type HeaderProps = {
   user: HeaderUser | null;
   unreadNotificationCount?: number;
 };
 
 export function Header({ user, unreadNotificationCount = 0 }: HeaderProps) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [authModal, setAuthModal] = useState<AuthModal>(null);
   const [authNext, setAuthNext] = useState<string | undefined>();
 
   function openLoginModal(next?: string) {
-    setIsMenuOpen(false);
     setAuthNext(next);
     setAuthModal("login");
   }
 
   function openSignUpModal(next?: string) {
-    setIsMenuOpen(false);
     setAuthNext(next);
     setAuthModal("signup");
   }
@@ -191,79 +232,21 @@ export function Header({ user, unreadNotificationCount = 0 }: HeaderProps) {
   return (
     <>
       <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white/90 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
-        <div className="mx-auto flex h-15 items-center justify-between gap-3 px-4 sm:gap-4 sm:px-6">
-          <Link href="/" className="inline-flex shrink-0 items-center" aria-label="Heavy Jungle 홈">
-            <Image
-              src="/logo/logo.png"
-              alt="Heavy Jungle"
-              width={1019}
-              height={210}
-              className="h-8 w-auto sm:h-9 dark:hidden"
-              priority
-            />
-            <Image
-              src="/logo/logo_dark.png"
-              alt="Heavy Jungle"
-              width={1019}
-              height={210}
-              className="hidden h-8 w-auto sm:h-9 dark:block"
-              priority
-            />
-          </Link>
+        {/* 데스크톱: 로고 · 검색 · 액션 한 줄 */}
+        <div className="mx-auto hidden h-15 items-center justify-between gap-4 px-6 md:flex">
+          <LogoLink heightClass="h-9" />
 
-          <SearchBar className="mx-3 min-w-0 max-w-xl flex-1 sm:mx-4" />
+          <SearchBar className="mx-4 min-w-0 max-w-xl flex-1" />
 
-          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <div className="flex shrink-0 items-center gap-3">
             <ThemeToggle />
-
             <AuthButtons
-              className="hidden md:flex"
               user={user}
               onLoginClick={openLoginModal}
               onSignUpClick={() => openSignUpModal()}
             />
-
-            <button
-              type="button"
-              aria-label={isMenuOpen ? "메뉴 닫기" : "메뉴 열기"}
-              aria-expanded={isMenuOpen}
-              onClick={() => setIsMenuOpen((prev) => !prev)}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-zinc-700 transition hover:bg-zinc-100 md:hidden dark:text-zinc-200 dark:hover:bg-zinc-800"
-            >
-              <span className="sr-only">메뉴</span>
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                className="h-5 w-5"
-                aria-hidden="true"
-              >
-                {isMenuOpen ? (
-                  <path strokeLinecap="round" d="M6 6l12 12M18 6L6 18" />
-                ) : (
-                  <path strokeLinecap="round" d="M4 7h16M4 12h16M4 17h16" />
-                )}
-              </svg>
-            </button>
             {user && <NotificationBell initialUnreadCount={unreadNotificationCount} />}
-            {user && (
-              <Link
-                href="/write"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-500 px-2 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-800"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="h-4 w-4 shrink-0"
-                  aria-hidden="true"
-                >
-                  <path strokeLinecap="round" d="M12 5v14M5 12h14" />
-                </svg>
-              </Link>
-            )}
+            {user && <WriteButton />}
             {user && (
               <ProfileMenu
                 username={user.username}
@@ -275,16 +258,32 @@ export function Header({ user, unreadNotificationCount = 0 }: HeaderProps) {
           </div>
         </div>
 
-        {isMenuOpen && (
-          <div className="border-t border-zinc-200 px-4 py-4 md:hidden dark:border-zinc-800">
-            <AuthButtons
-              className="flex-col [&_button]:w-full"
-              user={user}
-              onLoginClick={openLoginModal}
-              onSignUpClick={() => openSignUpModal()}
-            />
+        {/* 모바일: 로고 가운데 정렬 + 아래 줄에 전체폭 검색 */}
+        <div className="px-4 pb-2 md:hidden">
+          <div className="grid h-14 grid-cols-[1fr_auto_1fr] items-center gap-2">
+            <div className="flex items-center gap-1 justify-self-start">
+              <ThemeToggle />
+            </div>
+
+            <LogoLink heightClass="h-7" className="justify-self-center" />
+
+            <div className="flex items-center gap-1 justify-self-end">
+              {user ? (
+                <NotificationBell initialUnreadCount={unreadNotificationCount} />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => openLoginModal()}
+                  className="rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                >
+                  로그인
+                </button>
+              )}
+            </div>
           </div>
-        )}
+
+          <SearchBar className="w-full" />
+        </div>
       </header>
 
       <LoginModal

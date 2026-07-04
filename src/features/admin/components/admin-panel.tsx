@@ -400,7 +400,7 @@ export function AdminPanel({ posts, comments, users, auditLogs, reports, current
       <div
         role="tablist"
         aria-label="관리자 메뉴"
-        className="flex gap-1 border-b border-zinc-200 dark:border-zinc-700"
+        className="flex gap-1 overflow-x-auto border-b border-zinc-200 dark:border-zinc-700"
       >
         {TABS.map((tab) => {
           const isActive = activeTab === tab.id;
@@ -411,7 +411,7 @@ export function AdminPanel({ posts, comments, users, auditLogs, reports, current
               role="tab"
               aria-selected={isActive}
               onClick={() => setActiveTab(tab.id)}
-              className={`relative px-4 py-2.5 text-sm font-medium transition ${isActive
+              className={`relative shrink-0 whitespace-nowrap px-4 py-2.5 text-sm font-medium transition ${isActive
                 ? "text-zinc-900 dark:text-zinc-50"
                 : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
                 }`}
