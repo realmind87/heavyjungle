@@ -1,4 +1,11 @@
-export type NotificationType = "follow" | "comment" | "reply" | "like" | "comment_like";
+export type NotificationType =
+  | "follow"
+  | "comment"
+  | "reply"
+  | "like"
+  | "comment_like"
+  | "report_resolved"
+  | "report_dismissed";
 
 export type NotificationItem = {
   id: string;

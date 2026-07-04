@@ -3,7 +3,11 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { markAllNotificationsRead } from "@/features/notifications/actions";
-import { getNotificationHref, getNotificationText } from "@/features/notifications/display";
+import {
+  getNotificationHref,
+  getNotificationText,
+  isSystemNotification,
+} from "@/features/notifications/display";
 import type { NotificationItem } from "@/features/notifications/types";
 import { formatRelativeTime } from "@/lib/time";
 
@@ -26,6 +30,24 @@ function BellIcon() {
         strokeLinejoin="round"
         d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"
       />
+    </svg>
+  );
+}
+
+function SystemIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-4 w-4"
+      aria-hidden="true"
+    >
+      <path d="M12 3l7 4v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V7z" />
+      <path d="m9 12 2 2 4-4" />
     </svg>
   );
 }
@@ -143,7 +165,11 @@ export function NotificationBell({ initialUnreadCount }: NotificationBellProps) 
                       item.isRead ? "" : "bg-zinc-50 dark:bg-zinc-800/60"
                     }`}
                   >
-                    {item.actor.avatarUrl ? (
+                    {isSystemNotification(item.type) ? (
+                      <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300">
+                        <SystemIcon />
+                      </span>
+                    ) : item.actor.avatarUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element -- S3 공개 URL 아바타
                       <img
                         src={item.actor.avatarUrl}
@@ -157,9 +183,13 @@ export function NotificationBell({ initialUnreadCount }: NotificationBellProps) 
                     )}
                     <span className="min-w-0">
                       <span className="text-zinc-900 dark:text-zinc-50">
-                        <span className="font-medium">
-                          {item.actor.displayName ?? item.actor.username}
-                        </span>{" "}
+                        {!isSystemNotification(item.type) && (
+                          <>
+                            <span className="font-medium">
+                              {item.actor.displayName ?? item.actor.username}
+                            </span>{" "}
+                          </>
+                        )}
                         {getNotificationText(item.type)}
                       </span>
                       <span className="mt-0.5 block text-xs text-zinc-500 dark:text-zinc-400">

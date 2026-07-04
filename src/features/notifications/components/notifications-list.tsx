@@ -7,7 +7,11 @@ import {
   deleteNotification,
   markAllNotificationsRead,
 } from "@/features/notifications/actions";
-import { getNotificationHref, getNotificationText } from "@/features/notifications/display";
+import {
+  getNotificationHref,
+  getNotificationText,
+  isSystemNotification,
+} from "@/features/notifications/display";
 import type { NotificationItem } from "@/features/notifications/types";
 import { formatRelativeTime } from "@/lib/time";
 
@@ -90,7 +94,14 @@ export function NotificationsList({ initialItems, initialHasMore }: Notification
                 item.isRead ? "" : "bg-zinc-50 dark:bg-zinc-800/60"
               }`}
             >
-              {item.actor.avatarUrl ? (
+              {isSystemNotification(item.type) ? (
+                <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M12 3l7 4v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V7z" />
+                    <path d="m9 12 2 2 4-4" />
+                  </svg>
+                </span>
+              ) : item.actor.avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element -- S3 공개 URL 아바타
                 <img
                   src={item.actor.avatarUrl}
@@ -104,7 +115,11 @@ export function NotificationsList({ initialItems, initialHasMore }: Notification
               )}
               <span className="min-w-0">
                 <span className="text-zinc-900 dark:text-zinc-50">
-                  <span className="font-medium">{item.actor.displayName ?? item.actor.username}</span>{" "}
+                  {!isSystemNotification(item.type) && (
+                    <span className="font-medium">
+                      {item.actor.displayName ?? item.actor.username}{" "}
+                    </span>
+                  )}
                   {getNotificationText(item.type)}
                 </span>
                 {item.post && (

@@ -3,6 +3,7 @@
 import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { logAdminAction } from "@/features/admin/audit-log";
+import { createNotification } from "@/features/notifications/create";
 import { resolveReportSchema } from "@/features/reports/validators";
 import { requireAdminUser } from "@/server/auth/permissions";
 import { db } from "@/server/db";
@@ -50,6 +51,13 @@ export async function dismissReport(
     action: "report_dismiss",
     targetId: report.id,
     targetLabel: report.targetType === "post" ? "글 신고" : "댓글 신고",
+  });
+
+  await createNotification({
+    recipientId: report.reporterId,
+    actorId: user.id,
+    type: "report_dismissed",
+    postId: report.postId ?? undefined,
   });
 
   revalidatePath("/admin");
@@ -111,6 +119,13 @@ export async function resolveReportAndRemoveTarget(
     targetId: report.targetType === "post" ? report.postId ?? undefined : report.commentId ?? undefined,
     targetLabel: report.targetType === "post" ? "글 삭제 (신고 처리)" : "댓글 삭제 (신고 처리)",
     metadata: { reportId: report.id },
+  });
+
+  await createNotification({
+    recipientId: report.reporterId,
+    actorId: user.id,
+    type: "report_resolved",
+    postId: report.postId ?? undefined,
   });
 
   revalidatePath("/admin");

@@ -3,13 +3,18 @@ import { comments } from "./comments";
 import { posts } from "./posts";
 import { users } from "./users";
 
-/** follow: 팔로우 받음 | comment: 내 글에 댓글 | reply: 내 댓글에 답글 | like: 내 글에 좋아요 | comment_like: 내 댓글에 좋아요 */
+/**
+ * follow: 팔로우 받음 | comment: 내 글에 댓글 | reply: 내 댓글에 답글 | like: 내 글에 좋아요 | comment_like: 내 댓글에 좋아요
+ * report_resolved: 내 신고가 조치됨 | report_dismissed: 내 신고가 기각됨 (시스템 알림)
+ */
 export const notificationTypeEnum = pgEnum("notification_type", [
   "follow",
   "comment",
   "reply",
   "like",
   "comment_like",
+  "report_resolved",
+  "report_dismissed",
 ]);
 
 export const notifications = pgTable(

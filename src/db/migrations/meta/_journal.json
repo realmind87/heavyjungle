@@ -127,6 +127,13 @@
       "when": 1783149385668,
       "tag": "0018_organic_zzzax",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1783160948020,
+      "tag": "0019_supreme_eternity",
+      "breakpoints": true
     }
   ]
 }
