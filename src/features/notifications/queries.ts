@@ -11,7 +11,19 @@ import { notifications, posts, users } from "@/server/db/schema";
 
 const NOTIFICATION_LIST_LIMIT = 20;
 
-export async function listNotifications(recipientId: string): Promise<NotificationItem[]> {
+export type NotificationsPage = {
+  items: NotificationItem[];
+  hasMore: boolean;
+};
+
+/** 알림 목록 (페이지네이션) — 최신순, limit+1로 다음 페이지 존재 여부 판단 */
+export async function listNotificationsPage(
+  recipientId: string,
+  options: { limit?: number; offset?: number } = {},
+): Promise<NotificationsPage> {
+  const limit = options.limit ?? NOTIFICATION_LIST_LIMIT;
+  const offset = options.offset ?? 0;
+
   const rows = await db
     .select({
       id: notifications.id,
@@ -29,20 +41,32 @@ export async function listNotifications(recipientId: string): Promise<Notificati
     .leftJoin(posts, eq(notifications.postId, posts.id))
     .where(eq(notifications.recipientId, recipientId))
     .orderBy(desc(notifications.createdAt))
-    .limit(NOTIFICATION_LIST_LIMIT);
+    .limit(limit + 1)
+    .offset(offset);
 
-  return rows.map((row) => ({
-    id: row.id,
-    type: row.type,
-    isRead: row.isRead,
-    createdAt: row.createdAt.toISOString(),
-    actor: {
-      username: row.actorUsername,
-      displayName: row.actorDisplayName,
-      avatarUrl: resolveStoragePublicUrl(row.actorAvatarUrl),
-    },
-    post: row.postId ? { id: row.postId, title: row.postTitle ?? "" } : null,
-  }));
+  const hasMore = rows.length > limit;
+  const page = hasMore ? rows.slice(0, limit) : rows;
+
+  return {
+    items: page.map((row) => ({
+      id: row.id,
+      type: row.type,
+      isRead: row.isRead,
+      createdAt: row.createdAt.toISOString(),
+      actor: {
+        username: row.actorUsername,
+        displayName: row.actorDisplayName,
+        avatarUrl: resolveStoragePublicUrl(row.actorAvatarUrl),
+      },
+      post: row.postId ? { id: row.postId, title: row.postTitle ?? "" } : null,
+    })),
+    hasMore,
+  };
+}
+
+export async function listNotifications(recipientId: string): Promise<NotificationItem[]> {
+  const { items } = await listNotificationsPage(recipientId, { limit: NOTIFICATION_LIST_LIMIT });
+  return items;
 }
 
 export async function getUnreadNotificationCount(recipientId: string): Promise<number> {

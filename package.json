@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "typecheck": "tsc --noEmit",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:nas:up": "docker compose -f docker-compose.nas.yml up -d --build",

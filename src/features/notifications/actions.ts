@@ -18,3 +18,27 @@ export async function markAllNotificationsRead(): Promise<{ error?: string }> {
 
   return {};
 }
+
+export async function deleteNotification(notificationId: string): Promise<{ error?: string }> {
+  const user = await requireUser();
+  if (!user) {
+    return { error: "로그인이 필요합니다." };
+  }
+
+  await db
+    .delete(notifications)
+    .where(and(eq(notifications.id, notificationId), eq(notifications.recipientId, user.id)));
+
+  return {};
+}
+
+export async function deleteAllNotifications(): Promise<{ error?: string }> {
+  const user = await requireUser();
+  if (!user) {
+    return { error: "로그인이 필요합니다." };
+  }
+
+  await db.delete(notifications).where(eq(notifications.recipientId, user.id));
+
+  return {};
+}

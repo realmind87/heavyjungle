@@ -6,6 +6,7 @@ import "server-only";
 
 import { createHash } from "node:crypto";
 import { headers } from "next/headers";
+import { logger } from "@/lib/logger";
 import { redis } from "@/server/redis";
 
 export type RateLimitResult =
@@ -64,7 +65,9 @@ export async function checkRateLimit(options: {
 
     return { ok: true };
   } catch (error) {
-    console.error("[rate-limit] Redis unavailable, allowing request:", error);
+    logger.error("rate-limit: Redis unavailable, allowing request (fail-open)", error, {
+      key,
+    });
     return { ok: true };
   }
 }

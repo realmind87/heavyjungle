@@ -6,6 +6,7 @@ import "server-only";
 
 import Redis from "ioredis";
 import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 const globalForRedis = globalThis as unknown as {
   redis?: Redis;
@@ -19,7 +20,7 @@ function createRedis(): Redis {
   });
 
   client.on("error", (error) => {
-    console.error("[redis] connection error:", error);
+    logger.error("redis: connection error", error);
   });
 
   return client;

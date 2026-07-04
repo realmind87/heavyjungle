@@ -3,32 +3,13 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { markAllNotificationsRead } from "@/features/notifications/actions";
-import type { NotificationItem, NotificationType } from "@/features/notifications/types";
+import { getNotificationHref, getNotificationText } from "@/features/notifications/display";
+import type { NotificationItem } from "@/features/notifications/types";
 import { formatRelativeTime } from "@/lib/time";
 
 type NotificationBellProps = {
   initialUnreadCount: number;
 };
-
-function getNotificationText(type: NotificationType): string {
-  switch (type) {
-    case "follow":
-      return "회원님을 팔로우했습니다.";
-    case "comment":
-      return "회원님의 글에 댓글을 남겼습니다.";
-    case "reply":
-      return "회원님의 댓글에 답글을 남겼습니다.";
-    case "like":
-      return "회원님의 글을 좋아합니다.";
-    case "comment_like":
-      return "회원님의 댓글을 좋아합니다.";
-  }
-}
-
-function getNotificationHref(item: NotificationItem): string {
-  if (item.post) return `/posts/${item.post.id}`;
-  return `/u/${item.actor.username}`;
-}
 
 function BellIcon() {
   return (
@@ -70,14 +51,39 @@ export function NotificationBell({ initialUnreadCount }: NotificationBellProps) 
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function refreshUnreadCount() {
+      if (document.hidden) return;
+      try {
+        const res = await fetch("/api/notifications/unread-count", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = (await res.json()) as { unreadCount: number };
+        if (!cancelled) setUnreadCount(data.unreadCount);
+      } catch {
+        // 네트워크 오류는 조용히 무시 — 다음 주기에 재시도
+      }
+    }
+
+    const intervalId = window.setInterval(refreshUnreadCount, 30_000);
+    window.addEventListener("focus", refreshUnreadCount);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", refreshUnreadCount);
+    };
+  }, []);
+
   async function handleToggle() {
     const next = !isOpen;
     setIsOpen(next);
 
-    if (next && items === null) {
-      setIsLoading(true);
+    if (next) {
+      if (items === null) setIsLoading(true);
       try {
-        const res = await fetch("/api/notifications");
+        const res = await fetch("/api/notifications", { cache: "no-store" });
         if (res.ok) {
           const data = (await res.json()) as { items: NotificationItem[]; unreadCount: number };
           setItems(data.items);
@@ -85,11 +91,11 @@ export function NotificationBell({ initialUnreadCount }: NotificationBellProps) 
       } finally {
         setIsLoading(false);
       }
-    }
 
-    if (next && unreadCount > 0) {
-      setUnreadCount(0);
-      await markAllNotificationsRead();
+      if (unreadCount > 0) {
+        setUnreadCount(0);
+        await markAllNotificationsRead();
+      }
     }
   }
 
@@ -165,6 +171,16 @@ export function NotificationBell({ initialUnreadCount }: NotificationBellProps) 
               ))}
             </ul>
           )}
+
+          <div className="border-t border-zinc-200 dark:border-zinc-700">
+            <Link
+              href="/notifications"
+              onClick={() => setIsOpen(false)}
+              className="block px-4 py-3 text-center text-sm font-medium text-zinc-600 transition hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            >
+              모든 알림 보기
+            </Link>
+          </div>
         </div>
       )}
     </div>
