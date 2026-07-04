@@ -354,6 +354,8 @@ npm run db:migrate   # 마이그레이션
 | `npm run start` | 프로덕션 서버 |
 | `npm run lint` | ESLint |
 | `npm run test` | Vitest 단위 테스트 |
+| `npm run qa:smoke` | HTTP 스모크 + vitest (dev 서버 권장) |
+| `npm run test:e2e` | Playwright E2E smoke |
 | `npm run docker:up` / `docker:down` | 로컬 Docker |
 | `npm run db:migrate` | 마이그레이션 |
 | `npm run deploy:nas` | NAS 배포 |
@@ -484,7 +486,8 @@ Resend (이메일)
 
 - Redis 세션 미러
 - GitHub Actions 자동 NAS 배포 (SSH 준비 후 `deploy-nas.yml` push 트리거 활성화)
-- 본문 HTML 내 `<img>` next/image 변환, E2E 테스트
+- ~~본문 HTML 내 `<img>` next/image 변환~~ → `OptimizedHtmlContent` 적용 (게시글·댓글)
+- E2E 확장 (로그인·글 작성·댓글 플로우)
 
 ---
 

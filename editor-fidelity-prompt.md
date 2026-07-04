@@ -62,7 +62,8 @@ contentEditable innerHTML
 - [x] 셀 병합 있는 표
 - [x] 이미지(크기·정렬 지정), 링크
 - [x] 인용/코드블록
-- [ ] 위 전체를 담은 글을 등록 직후 새로고침 없이 상세·목록에서 동일하게 확인 (수동 QA)
+- [x] 위 전체를 담은 글을 등록 직후 새로고침 없이 상세·목록에서 동일하게 확인 (수동 QA)
+- [x] 자동 QA — `npm run qa:smoke` (HTTP + vitest), `npm run test:e2e` (Playwright smoke)
 
 ## 주의
 - sanitize는 유지하되 정상 서식까지 지우지 않는다.

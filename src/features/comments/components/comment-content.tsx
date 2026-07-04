@@ -1,3 +1,6 @@
+"use client";
+
+import { OptimizedHtmlContent } from "@/components/ui/optimized-html-content";
 import { isCommentHtmlContent, stripCommentNbsp } from "@/lib/sanitize-comment-html";
 
 type CommentContentProps = {
@@ -5,6 +8,9 @@ type CommentContentProps = {
   isDeleted: boolean;
   className?: string;
 };
+
+const commentHtmlClass =
+  "text-sm text-zinc-900 dark:text-zinc-100 [&_a]:break-all [&_a]:text-blue-600 [&_a]:underline dark:[&_a]:text-blue-400";
 
 export function CommentContent({ content, isDeleted, className = "" }: CommentContentProps) {
   if (isDeleted) {
@@ -17,9 +23,10 @@ export function CommentContent({ content, isDeleted, className = "" }: CommentCo
 
   if (isCommentHtmlContent(content)) {
     return (
-      <div
-        className={`text-sm text-zinc-900 dark:text-zinc-100 [&_a]:break-all [&_a]:text-blue-600 [&_a]:underline dark:[&_a]:text-blue-400 [&_img]:my-1 [&_img]:max-h-64 [&_img]:max-w-full [&_img]:rounded-md ${className}`}
-        dangerouslySetInnerHTML={{ __html: content }}
+      <OptimizedHtmlContent
+        html={content}
+        className={`${commentHtmlClass} ${className}`}
+        imageClassName="my-1 max-h-64 max-w-full rounded-md"
       />
     );
   }

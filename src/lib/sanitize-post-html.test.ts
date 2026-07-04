@@ -94,6 +94,14 @@ describe("sanitizePostHtml round-trip fidelity", () => {
     expect(sanitized).toContain("width: 200px");
   });
 
+  it("preserves GIF image src", () => {
+    const html =
+      '<div style="text-align: center"><img src="http://localhost:9000/uploads/posts/user/anim.gif" alt="gif" style="width: 200px"></div>';
+    const sanitized = sanitize(html);
+    expect(sanitized).toContain("anim.gif");
+    expect(sanitized).toContain('alt="gif"');
+  });
+
   it("strips script tags and javascript URLs", () => {
     const html =
       '<div onclick="alert(1)">bad</div><a href="javascript:alert(1)">link</a><script>alert(1)</script><span style="color: url(javascript:alert(1))">x</span>';

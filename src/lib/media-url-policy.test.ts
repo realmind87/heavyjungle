@@ -19,8 +19,8 @@ describe("media-url-policy", () => {
 
   it("isAllowedStoragePublicSrc matches S3 public base", () => {
     const base = "http://localhost:9000/uploads";
-    expect(isAllowedStoragePublicSrc(`${base}/posts/u1/a.jpg`, base, "posts")).toBe(true);
-    expect(isAllowedStoragePublicSrc(`${base}/comments/u1/a.jpg`, base, "posts")).toBe(false);
+    expect(isAllowedStoragePublicSrc(`${base}/posts/u1/anim.gif`, base, "posts")).toBe(true);
+    expect(isAllowedStoragePublicSrc(`${base}/comments/u1/anim.gif`, base, "comments")).toBe(true);
     expect(isAllowedStoragePublicSrc("https://evil.test/posts/u1/a.jpg", base, "posts")).toBe(false);
   });
 });
