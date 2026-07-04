@@ -21,7 +21,7 @@ export default async function FollowingPage({ params }: PageProps) {
   return (
     <div className="min-h-screen">
       <SiteHeader />
-      <main className="mx-auto max-w-lg px-4 py-8">
+      <main id="main-content" tabIndex={-1} className="mx-auto max-w-lg px-4 py-8">
         <Link href={`/u/${username}`} className={linkMutedClass}>
           ← {displayName}
         </Link>

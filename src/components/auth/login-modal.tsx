@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState, useEffect, useId } from "react";
+import { useActionState, useId, useRef } from "react";
 import { AuthRecoveryLinks } from "@/components/auth/auth-recovery-links";
 import { signIn, type AuthActionState } from "@/features/auth/actions";
+import { useModalA11y } from "@/hooks/use-a11y";
 
 type LoginModalProps = {
   isOpen: boolean;
@@ -13,25 +14,10 @@ type LoginModalProps = {
 
 export function LoginModal({ isOpen, onClose, onSwitchToSignUp, next }: LoginModalProps) {
   const titleId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
   const [state, formAction, pending] = useActionState(signIn, {} as AuthActionState);
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "";
-    };
-  }, [isOpen, onClose]);
+  useModalA11y({ open: isOpen, onClose, dialogRef });
 
   if (!isOpen) return null;
 
@@ -45,9 +31,11 @@ export function LoginModal({ isOpen, onClose, onSwitchToSignUp, next }: LoginMod
       />
 
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        tabIndex={-1}
         className="relative flex h-[500px] w-[500px] max-w-full flex-col rounded-2xl border border-zinc-200 bg-white p-8 shadow-xl dark:border-zinc-700 dark:bg-zinc-900"
       >
         <button
@@ -93,7 +81,11 @@ export function LoginModal({ isOpen, onClose, onSwitchToSignUp, next }: LoginMod
             </label>
           </div>
 
-          {state.error && <p className="mt-4 text-sm text-red-600 dark:text-red-400">{state.error}</p>}
+          {state.error && (
+            <p className="mt-4 text-sm text-red-600 dark:text-red-400" role="alert">
+              {state.error}
+            </p>
+          )}
 
           <AuthRecoveryLinks className="mt-3" onNavigate={onClose} />
 

@@ -79,7 +79,7 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
   return (
     <div className="min-h-screen">
       <SiteHeader />
-      <main className="mx-auto max-w-3xl px-4 py-8">
+      <main id="main-content" tabIndex={-1} className="mx-auto max-w-3xl px-4 py-8">
         {isOwner && email === "updated" && (
           <p className={`mb-6 ${successTextClass}`}>이메일이 변경되었습니다.</p>
         )}

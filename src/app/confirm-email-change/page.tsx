@@ -13,7 +13,7 @@ export default async function ConfirmEmailChangePage({ searchParams }: PageProps
   return (
     <div className="min-h-screen">
       <SiteHeader />
-      <main className="mx-auto flex min-h-[60vh] max-w-md flex-col justify-center px-4 py-12">
+      <main id="main-content" tabIndex={-1} className="mx-auto flex min-h-[60vh] max-w-md flex-col justify-center px-4 py-12">
         <h1 className={`mb-2 text-center ${pageTitleClass}`}>이메일 변경 확인</h1>
         <p className={`mb-6 text-center ${mutedTextClass}`}>
           아래 버튼을 눌러 새 이메일 주소로의 변경을 완료하세요.

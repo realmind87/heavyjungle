@@ -58,7 +58,7 @@ export default async function SearchPage({ searchParams }: PageProps) {
   return (
     <div className="min-h-screen">
       <SiteHeader />
-      <main className="mx-auto max-w-3xl px-4 py-8 pb-20 md:pb-8">
+      <main id="main-content" tabIndex={-1} className="mx-auto max-w-3xl px-4 py-8 pb-20 md:pb-8">
         <h1 className={pageTitleClass}>
           {q ? (
             <>

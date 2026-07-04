@@ -4,10 +4,8 @@
  * 공용 모달 셸 — ESC·backdrop 닫기, body 스크롤 잠금, 포커스 트랩, 닫을 때 포커스 복귀.
  * Intercepting Routes용 래퍼: RouteModal.tsx (router.back() 닫기)
  */
-import { useEffect, useId, useRef, type ReactNode, type RefObject } from "react";
-
-const FOCUSABLE_SELECTOR =
-  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+import { useId, useRef, type ReactNode, type RefObject } from "react";
+import { useModalA11y } from "@/hooks/use-a11y";
 
 type ModalProps = {
   open: boolean;
@@ -18,65 +16,11 @@ type ModalProps = {
   returnFocusRef?: RefObject<HTMLElement | null>;
 };
 
-function getFocusableElements(container: HTMLElement) {
-  return Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
-    (el) => !el.hasAttribute("disabled") && el.getAttribute("aria-hidden") !== "true",
-  );
-}
-
 export function Modal({ open, onClose, title, children, returnFocusRef }: ModalProps) {
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!open) return;
-
-    const previouslyFocused = document.activeElement as HTMLElement | null;
-    const returnFocusTarget = returnFocusRef?.current ?? previouslyFocused;
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        onClose();
-        return;
-      }
-
-      if (event.key !== "Tab" || !dialogRef.current) return;
-
-      const focusable = getFocusableElements(dialogRef.current);
-      if (focusable.length === 0) {
-        event.preventDefault();
-        return;
-      }
-
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      const active = document.activeElement as HTMLElement;
-
-      if (event.shiftKey && active === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && active === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
-    document.body.style.overflow = "hidden";
-
-    const focusable = dialogRef.current ? getFocusableElements(dialogRef.current) : [];
-    if (focusable.length > 0) {
-      focusable[0].focus();
-    } else {
-      dialogRef.current?.focus();
-    }
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "";
-      returnFocusTarget?.focus();
-    };
-  }, [open, onClose, returnFocusRef]);
+  useModalA11y({ open, onClose, dialogRef, returnFocusRef });
 
   if (!open) return null;
 

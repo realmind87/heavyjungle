@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { LoginModal } from "@/components/auth/login-modal";
 import { SignUpModal } from "@/components/auth/signup-modal";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -10,6 +10,7 @@ import { signOut } from "@/features/auth/actions";
 import { NotificationBell } from "@/features/notifications/components/notification-bell";
 import { ProfileAvatar } from "@/features/profile/components/ProfileAvatar";
 import { SearchBar } from "@/features/search/components/search-bar";
+import { useDismissOnEscape } from "@/hooks/use-a11y";
 
 type HeaderUser = {
   username: string;
@@ -35,9 +36,12 @@ function ProfileMenu({
   avatarUrl?: string | null;
   isAdmin?: boolean;
 }) {
+  const menuId = useId();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const showUsername = displayName !== username;
+
+  useDismissOnEscape(isOpen, () => setIsOpen(false));
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -57,8 +61,10 @@ function ProfileMenu({
     <div ref={menuRef} className="relative">
       <button
         type="button"
-        aria-label={`${displayName} 프로필`}
+        aria-label={`${displayName} 프로필 메뉴`}
         aria-expanded={isOpen}
+        aria-haspopup="menu"
+        aria-controls={menuId}
         title={displayName}
         onClick={() => setIsOpen((prev) => !prev)}
         className="inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-900 text-sm font-semibold text-white ring-2 ring-zinc-200 transition hover:ring-zinc-300 dark:bg-zinc-100 dark:text-zinc-900 dark:ring-zinc-700 dark:hover:ring-zinc-600"
@@ -71,7 +77,12 @@ function ProfileMenu({
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+        <div
+          id={menuId}
+          role="menu"
+          aria-label={`${displayName} 프로필 메뉴`}
+          className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900"
+        >
           <div className="border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
             <div className="flex items-center gap-2">
               <ProfileAvatar name={displayName} avatarUrl={avatarUrl} size="2xs" />
@@ -87,6 +98,7 @@ function ProfileMenu({
           <div className="p-2">
             <Link
               href={`/u/${username}`}
+              role="menuitem"
               onClick={() => setIsOpen(false)}
               className="block rounded-lg px-3 py-2 text-sm text-zinc-700 transition hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800"
             >
@@ -96,6 +108,7 @@ function ProfileMenu({
             {isAdmin && (
               <Link
                 href="/admin"
+                role="menuitem"
                 onClick={() => setIsOpen(false)}
                 className="block rounded-lg px-3 py-2 text-sm text-zinc-700 transition hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800"
               >
@@ -106,6 +119,7 @@ function ProfileMenu({
             <form action={signOut}>
               <button
                 type="submit"
+                role="menuitem"
                 className="w-full rounded-lg px-3 py-2 text-left text-sm text-zinc-700 transition hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800"
               >
                 로그아웃

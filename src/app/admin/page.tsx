@@ -30,7 +30,7 @@ export default async function AdminPage() {
   return (
     <div className="min-h-screen">
       <SiteHeader />
-      <main className="mx-auto max-w-5xl px-4 py-8 pb-8">
+      <main id="main-content" tabIndex={-1} className="mx-auto max-w-5xl px-4 py-8 pb-8">
         <Link href="/" className={linkMutedClass}>
           ← 홈
         </Link>

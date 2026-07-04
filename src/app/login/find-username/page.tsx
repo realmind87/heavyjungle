@@ -8,7 +8,7 @@ export default function FindUsernamePage() {
   return (
     <div className="min-h-screen">
       <SiteHeader />
-      <main className="mx-auto flex min-h-[60vh] max-w-md flex-col justify-center px-4 py-12">
+      <main id="main-content" tabIndex={-1} className="mx-auto flex min-h-[60vh] max-w-md flex-col justify-center px-4 py-12">
         <h1 className={`mb-2 text-center ${pageTitleClass}`}>아이디 찾기</h1>
         <p className={`mb-6 text-center ${mutedTextClass}`}>
           가입 시 사용한 이메일을 입력하면 아이디를 안내해 드립니다.

@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useEffect, useId } from "react";
+import { useActionState, useId, useRef } from "react";
 import { signUp, type AuthActionState } from "@/features/auth/actions";
+import { useModalA11y } from "@/hooks/use-a11y";
 
 type SignUpModalProps = {
   isOpen: boolean;
@@ -12,25 +13,10 @@ type SignUpModalProps = {
 
 export function SignUpModal({ isOpen, onClose, onSwitchToLogin, next }: SignUpModalProps) {
   const titleId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
   const [state, formAction, pending] = useActionState(signUp, {} as AuthActionState);
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "";
-    };
-  }, [isOpen, onClose]);
+  useModalA11y({ open: isOpen, onClose, dialogRef });
 
   if (!isOpen) return null;
 
@@ -44,9 +30,11 @@ export function SignUpModal({ isOpen, onClose, onSwitchToLogin, next }: SignUpMo
       />
 
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        tabIndex={-1}
         className="relative flex max-h-[90vh] w-[500px] max-w-full flex-col overflow-y-auto rounded-2xl border border-zinc-200 bg-white p-8 shadow-xl dark:border-zinc-700 dark:bg-zinc-900"
       >
         <button
@@ -104,7 +92,11 @@ export function SignUpModal({ isOpen, onClose, onSwitchToLogin, next }: SignUpMo
             </label>
           </div>
 
-          {state.error && <p className="mt-4 text-sm text-red-600 dark:text-red-400">{state.error}</p>}
+          {state.error && (
+            <p className="mt-4 text-sm text-red-600 dark:text-red-400" role="alert">
+              {state.error}
+            </p>
+          )}
 
           <button
             type="submit"

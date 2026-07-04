@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState, useEffect, useId, useState } from "react";
+import { useActionState, useEffect, useId, useRef, useState } from "react";
 import { toast } from "@/components/ui/toast";
 import { reportComment, reportPost, type ReportActionState } from "@/features/reports/actions";
 import { REPORT_REASON_LABEL, type ReportReason } from "@/features/reports/types";
+import { useModalA11y } from "@/hooks/use-a11y";
 import {
   buttonPrimaryClass,
   buttonSecondaryClass,
@@ -35,8 +36,11 @@ type ReportModalProps = {
 
 function ReportModal({ targetType, targetId, onClose }: ReportModalProps) {
   const titleId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
   const action = targetType === "post" ? reportPost : reportComment;
   const [state, formAction, pending] = useActionState(action, {} as ReportActionState);
+
+  useModalA11y({ open: true, onClose, dialogRef });
 
   useEffect(() => {
     if (state.success) {
@@ -51,9 +55,11 @@ function ReportModal({ targetType, targetId, onClose }: ReportModalProps) {
       <button type="button" aria-label="닫기" className="absolute inset-0 bg-black/50" onClick={onClose} />
 
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        tabIndex={-1}
         className="relative w-[420px] max-w-full rounded-2xl border border-zinc-200 bg-white p-6 shadow-xl dark:border-zinc-700 dark:bg-zinc-900"
       >
         <h2 id={titleId} className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
@@ -78,7 +84,11 @@ function ReportModal({ targetType, targetId, onClose }: ReportModalProps) {
             <textarea name="detail" rows={3} maxLength={500} className={textareaClass} placeholder="신고 사유를 자세히 적어주세요." />
           </label>
 
-          {state.error && <p className={`mt-3 ${errorTextClass}`}>{state.error}</p>}
+          {state.error && (
+            <p className={`mt-3 ${errorTextClass}`} role="alert">
+              {state.error}
+            </p>
+          )}
 
           <div className="mt-5 flex justify-end gap-2">
             <button type="button" onClick={onClose} className={buttonSecondaryClass}>
@@ -110,7 +120,7 @@ export function ReportButton({ targetType, targetId, className, label }: ReportB
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        aria-label="신고"
+        aria-label={label ? undefined : "신고"}
         className={
           className ??
           "inline-flex shrink-0 items-center justify-center p-1 text-zinc-500 transition hover:text-red-600 dark:hover:text-red-400"

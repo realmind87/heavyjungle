@@ -15,7 +15,7 @@ export default async function NotificationsPage() {
   return (
     <div className="min-h-screen">
       <SiteHeader />
-      <main className="mx-auto max-w-2xl px-4 py-8 pb-20 md:pb-8">
+      <main id="main-content" tabIndex={-1} className="mx-auto max-w-2xl px-4 py-8 pb-20 md:pb-8">
         <Link href="/" className={linkMutedClass}>
           ← 홈
         </Link>

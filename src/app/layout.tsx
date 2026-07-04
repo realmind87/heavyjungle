@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { SiteBottomNav } from "@/components/layout/site-bottom-nav";
+import { SkipToContent } from "@/components/layout/skip-to-content";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { ToastProvider } from "@/components/providers/toast-provider";
@@ -32,6 +33,7 @@ export default function RootLayout({
         className="antialiased bg-white pb-16 text-zinc-900 md:pb-0 dark:bg-zinc-950 dark:text-zinc-50"
         cz-shortcut-listen="true"
       >
+        <SkipToContent />
         <ThemeProvider>
           <QueryProvider>
             <ToastProvider>{children}</ToastProvider>

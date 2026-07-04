@@ -8,7 +8,7 @@ export default function SignUpPage() {
   return (
     <div className="min-h-screen">
       <SiteHeader />
-    <main className="mx-auto flex min-h-[60vh] max-w-md flex-col justify-center px-4 py-12">
+    <main id="main-content" tabIndex={-1} className="mx-auto flex min-h-[60vh] max-w-md flex-col justify-center px-4 py-12">
       <h1 className={`mb-6 text-center ${pageTitleClass}`}>회원가입</h1>
       <AuthForm action={signUp} submitLabel="회원가입">
         <label className="block">

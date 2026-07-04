@@ -9,7 +9,7 @@ export default async function ItemsPage() {
   const initial = await itemsRepository.findByCursor({ limit: 20 });
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-8 px-6 py-16">
+    <main id="main-content" tabIndex={-1} className="mx-auto flex min-h-screen max-w-3xl flex-col gap-8 px-6 py-16">
       <header className="space-y-2">
         <Link href="/" className={`${linkMutedClass} hover:text-zinc-700 dark:hover:text-zinc-300`}>
           ← Home

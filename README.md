@@ -148,6 +148,15 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
 - **`/sitemap.xml`** — 홈·공지 + 최근 글·프로필 URL (최대 1000/500건)
 - **`/robots.txt`** — `/admin`, `/api/` 등 크롤 제외
 
+### 접근성
+
+- **본문 바로가기** — `SkipToContent` (Tab 첫 입력 시 표시) → `#main-content`
+- **키보드 포커스** — `:focus-visible` 전역 outline, `prefers-reduced-motion` 대응
+- **모달** — ESC·Tab 포커스 트랩·닫을 때 포커스 복귀 (`useModalA11y`, 공용 `Modal`)
+- **드롭다운** — 알림 벨·프로필 메뉴 ESC 닫기, `aria-expanded` / `aria-controls` / `aria-haspopup`
+- **검색** — combobox + listbox, ↑↓·Enter·ESC 키보드 탐색
+- **폼 오류** — `role="alert"` (로그인·신고 등)
+
 ### 관리자 (`/admin`)
 
 - 관리자 전용 (로그인 + `role=admin` 또는 `ADMIN_USERNAMES`)
