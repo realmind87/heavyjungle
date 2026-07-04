@@ -6,6 +6,7 @@ import { createCommentImageUploadUrl, deleteCommentImage } from "@/features/uplo
 import {
   COMMENT_IMAGE_ALLOWED_CONTENT_TYPES,
   COMMENT_IMAGE_MAX_BYTES,
+  resolveCommentImageContentType,
 } from "@/features/uploads/constants";
 import { prepareEditorImage, useRichTextImageControls } from "@/lib/rich-text-editor-image";
 import { buttonPrimaryClass } from "@/lib/ui-classes";
@@ -178,8 +179,9 @@ export function CommentRichTextEditor({
 
   const handleImageFile = useCallback(
     async (file: File) => {
-      if (!(COMMENT_IMAGE_ALLOWED_CONTENT_TYPES as readonly string[]).includes(file.type)) {
-        toast.error("JPEG, PNG, WebP 이미지만 업로드할 수 있습니다.");
+      const contentType = resolveCommentImageContentType(file);
+      if (!contentType) {
+        toast.error("JPEG, PNG, WebP, GIF 이미지만 업로드할 수 있습니다.");
         return;
       }
 
@@ -192,7 +194,7 @@ export function CommentRichTextEditor({
 
       const intent = await createCommentImageUploadUrl({
         filename: file.name,
-        contentType: file.type,
+        contentType,
         size: file.size,
       });
 
@@ -205,7 +207,7 @@ export function CommentRichTextEditor({
       const putResponse = await fetch(intent.uploadUrl, {
         method: "PUT",
         body: file,
-        headers: { "Content-Type": file.type },
+        headers: { "Content-Type": contentType },
       });
 
       if (!putResponse.ok) {
@@ -307,7 +309,7 @@ export function CommentRichTextEditor({
           <input
             ref={imageInputRef}
             type="file"
-            accept={COMMENT_IMAGE_ALLOWED_CONTENT_TYPES.join(",")}
+            accept={[...COMMENT_IMAGE_ALLOWED_CONTENT_TYPES, ".gif"].join(",")}
             className="hidden"
             onChange={(event) => {
               const file = event.target.files?.[0];

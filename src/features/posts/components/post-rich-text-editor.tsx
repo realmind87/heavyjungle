@@ -12,7 +12,9 @@ import {
   POST_IMAGE_MAX_BYTES,
   POST_VIDEO_ALLOWED_CONTENT_TYPES,
   POST_VIDEO_MAX_BYTES,
+  resolvePostImageContentType,
 } from "@/features/uploads/constants";
+import { postContentEditorExtraClass, postContentProseClass } from "@/lib/post-content-styles";
 import { prepareEditorImage, prepareEditorMedia, useRichTextImageControls } from "@/lib/rich-text-editor-image";
 import { handleRichTextEditorKeyDown } from "@/lib/rich-text-editor-shortcuts";
 
@@ -27,6 +29,7 @@ type PostRichTextEditorProps = {
   editorRef: RefObject<HTMLDivElement | null>;
   placeholder: string;
   isEmpty: boolean;
+  errorMessage?: string | null;
   onInput: () => void;
 };
 
@@ -476,6 +479,7 @@ export function PostRichTextEditor({
   editorRef,
   placeholder,
   isEmpty,
+  errorMessage = null,
   onInput,
 }: PostRichTextEditorProps) {
   const savedRangeRef = useRef<Range | null>(null);
@@ -759,8 +763,9 @@ export function PostRichTextEditor({
 
   const handleImageFile = useCallback(
     async (file: File) => {
-      if (!(POST_IMAGE_ALLOWED_CONTENT_TYPES as readonly string[]).includes(file.type)) {
-        toast.error("JPEG, PNG, WebP 이미지만 업로드할 수 있습니다.");
+      const contentType = resolvePostImageContentType(file);
+      if (!contentType) {
+        toast.error("JPEG, PNG, WebP, GIF 이미지만 업로드할 수 있습니다.");
         return;
       }
 
@@ -774,7 +779,7 @@ export function PostRichTextEditor({
 
       const intent = await createPostImageUploadUrl({
         filename: file.name,
-        contentType: file.type,
+        contentType,
         size: file.size,
       });
 
@@ -788,7 +793,7 @@ export function PostRichTextEditor({
       const putResponse = await new Promise<boolean>((resolve) => {
         const xhr = new XMLHttpRequest();
         xhr.open("PUT", intent.uploadUrl);
-        xhr.setRequestHeader("Content-Type", file.type);
+        xhr.setRequestHeader("Content-Type", contentType);
         xhr.upload.onprogress = (event) => {
           if (!event.lengthComputable) return;
           const percent = Math.max(0, Math.min(100, Math.round((event.loaded / event.total) * 100)));
@@ -1144,13 +1149,20 @@ export function PostRichTextEditor({
             )}
           </div>
         )}
-        {isEmpty && (
+        {(isEmpty || errorMessage) && (
           <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 font-sans text-base text-zinc-400 dark:text-zinc-500"
+            aria-hidden={!errorMessage}
+            role={errorMessage ? "alert" : undefined}
+            className={`pointer-events-none absolute inset-0 font-sans text-base ${
+              errorMessage ? "text-red-600 dark:text-red-400" : "text-zinc-400 dark:text-zinc-500"
+            }`}
           >
-            {placeholder}
-            <span className="text-red-600 dark:text-red-500">*</span>
+            {errorMessage ?? (
+              <>
+                {placeholder}
+                <span className="text-red-600 dark:text-red-500">*</span>
+              </>
+            )}
           </div>
         )}
         <div
@@ -1162,7 +1174,7 @@ export function PostRichTextEditor({
           suppressContentEditableWarning
           onInput={onInput}
           onKeyDown={handleEditorKeyDown}
-          className="min-h-[200px] font-sans text-base text-zinc-900 outline-none dark:text-zinc-100 [&_a]:break-all [&_a]:text-blue-600 [&_a]:underline dark:[&_a]:text-blue-400 [&_div]:min-h-[1.5em] [&_img]:my-2 [&_img]:max-h-96 [&_img]:max-w-full [&_img]:rounded-lg [&_img]:cursor-pointer [&_s]:line-through [&_strike]:line-through [&_del]:line-through [&_video]:my-3 [&_video]:max-h-[32rem] [&_video]:max-w-full [&_video]:rounded-lg [&_video]:cursor-pointer [&_iframe]:my-3 [&_iframe]:aspect-video [&_iframe]:w-full [&_iframe]:max-w-full [&_iframe]:rounded-lg [&_img.editor-image-selected]:outline [&_img.editor-image-selected]:outline-2 [&_img.editor-image-selected]:outline-blue-500 [&_img.editor-image-selected]:outline-offset-2 [&_video.editor-image-selected]:outline [&_video.editor-image-selected]:outline-2 [&_video.editor-image-selected]:outline-blue-500 [&_video.editor-image-selected]:outline-offset-2"
+          className={`min-h-[200px] outline-none ${postContentProseClass} ${postContentEditorExtraClass}`}
         />
         {selectedImage && deleteButtonPosition && (
           <button
@@ -1307,7 +1319,7 @@ export function PostRichTextEditor({
         <input
           ref={imageInputRef}
           type="file"
-          accept={POST_IMAGE_ALLOWED_CONTENT_TYPES.join(",")}
+          accept={[...POST_IMAGE_ALLOWED_CONTENT_TYPES, ".gif"].join(",")}
           className="hidden"
           onChange={(event) => {
             const file = event.target.files?.[0];

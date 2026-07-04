@@ -45,10 +45,10 @@ export default async function HomePage({ searchParams }: PageProps) {
             <div className="sticky top-20 space-y-4">
               {user && <HomeSidebar listState={listState} />}
               <HomeNotices notices={notices} />
+              <p className="mt-4 text-zinc-500 text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                &copy; 2026 Heavy Jungle. All rights reserved.
+              </p>
             </div>
-            <p className="mt-4 text-zinc-500 text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-              &copy; 2026 Heavy Jungle. All rights reserved.
-            </p>
           </aside>
         </section>
       </main>

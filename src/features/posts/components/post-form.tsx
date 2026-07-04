@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { createPost, deletePost, updatePost, type PostActionState } from "@/features/posts/actions";
+import { PostDraftPreview } from "@/features/posts/components/post-draft-preview";
 import { PostRichTextEditor } from "@/features/posts/components/post-rich-text-editor";
-import type { PostCategory } from "@/features/posts/validators";
+import { createPostFormSchema, type PostCategory } from "@/features/posts/validators";
 import { isPostHtmlEmpty } from "@/lib/sanitize-post-html";
 import {
   buttonDangerClass,
@@ -91,11 +92,79 @@ function PostFormBody({
   deleteState,
 }: PostFormBodyProps) {
   const editorRef = useRef<HTMLDivElement>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
   const contentInputRef = useRef<HTMLInputElement>(null);
   const initializedRef = useRef(false);
   const [isContentEmpty, setIsContentEmpty] = useState(isPostHtmlEmpty(initialContent));
   const [isTitleEmpty, setIsTitleEmpty] = useState(initialTitle.trim() === "");
   const [category, setCategory] = useState<PostCategory>(initialCategory);
+  const [editorMode, setEditorMode] = useState<"write" | "preview">("write");
+  const [previewTitle, setPreviewTitle] = useState(initialTitle);
+  const [previewHtml, setPreviewHtml] = useState(initialContent);
+  const [titleError, setTitleError] = useState<string | null>(null);
+  const [contentError, setContentError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!state.error) return;
+    if (state.error.includes("제목")) {
+      setTitleError(state.error);
+      return;
+    }
+    if (state.error.includes("내용")) {
+      setContentError(state.error);
+      return;
+    }
+    setContentError(state.error);
+  }, [state.error]);
+
+  function clearFieldErrors() {
+    setTitleError(null);
+    setContentError(null);
+  }
+
+  function validateDraftFields(): boolean {
+    syncContent();
+    const title = titleInputRef.current?.value.trim() ?? "";
+    const content = contentInputRef.current?.value ?? "";
+
+    setIsTitleEmpty(title === "");
+    setIsContentEmpty(isPostHtmlEmpty(content));
+
+    let nextTitleError: string | null = null;
+    let nextContentError: string | null = null;
+
+    const parsed = createPostFormSchema.safeParse({
+      title,
+      content,
+      category,
+    });
+
+    if (!parsed.success) {
+      for (const issue of parsed.error.issues) {
+        if (issue.path[0] === "title" && !nextTitleError) {
+          nextTitleError = issue.message;
+        }
+        if (issue.path[0] === "content" && !nextContentError) {
+          nextContentError = issue.message;
+        }
+      }
+    }
+
+    if (isPostHtmlEmpty(content)) {
+      nextContentError = "내용을 입력하세요.";
+    }
+
+    setTitleError(nextTitleError);
+    setContentError(nextContentError);
+
+    if (nextTitleError || nextContentError) {
+      return false;
+    }
+
+    setPreviewTitle(title);
+    setPreviewHtml(content);
+    return true;
+  }
 
   useEffect(() => {
     const editor = editorRef.current;
@@ -111,7 +180,23 @@ function PostFormBody({
     if (!editor || !input) return;
     const html = editor.innerHTML;
     input.value = html;
+    setPreviewHtml(html);
     setIsContentEmpty(isPostHtmlEmpty(html));
+  }
+
+  function handleEditorModeChange(mode: "write" | "preview") {
+    if (mode === "preview") {
+      if (!validateDraftFields()) {
+        setEditorMode("write");
+        return;
+      }
+      clearFieldErrors();
+      setEditorMode("preview");
+      return;
+    }
+
+    clearFieldErrors();
+    setEditorMode("write");
   }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -122,9 +207,9 @@ function PostFormBody({
       return;
     }
 
-    const html = contentInputRef.current?.value ?? "";
-    if (isPostHtmlEmpty(html)) {
+    if (!validateDraftFields()) {
       event.preventDefault();
+      setEditorMode("write");
     }
   }
 
@@ -137,40 +222,90 @@ function PostFormBody({
         <PostCategoryTabs value={category} onChange={setCategory} />
       )}
 
-      <div className="relative">
-        {isTitleEmpty && (
+      <div className={editorMode === "preview" ? "hidden" : "relative"}>
+        {(isTitleEmpty || titleError) && (
           <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 box-border py-sm font-sans text-title-3 text-zinc-400 dark:text-zinc-500"
+            aria-hidden={!titleError}
+            role={titleError ? "alert" : undefined}
+            className={`pointer-events-none absolute inset-0 box-border py-sm font-sans text-title-3 ${
+              titleError ? "text-red-600 dark:text-red-400" : "text-zinc-400 dark:text-zinc-500"
+            }`}
           >
-            {TITLE_PLACEHOLDER}
-            <span className="text-red-600 dark:text-red-500">*</span>
+            {titleError ?? (
+              <>
+                {TITLE_PLACEHOLDER}
+                <span className="text-red-600 dark:text-red-500">*</span>
+              </>
+            )}
           </div>
         )}
         <input
+          ref={titleInputRef}
           id="title"
           name="title"
           maxLength={200}
           defaultValue={initialTitle}
           aria-label="제목 (필수)"
-          onInput={(event) => setIsTitleEmpty(event.currentTarget.value.trim() === "")}
+          aria-invalid={titleError ? true : undefined}
+          onInput={(event) => {
+            setIsTitleEmpty(event.currentTarget.value.trim() === "");
+            setTitleError(null);
+          }}
           className="relative box-border block w-full m-0 py-sm px-0 border-0 bg-transparent font-bold outline-none resize-none overflow-y-hidden font-sans text-2xl text-zinc-900 dark:text-zinc-50"
         />
       </div>
-      {state.error && <p className={errorTextClass}>{state.error}</p>}
 
-      <PostRichTextEditor
-        editorRef={editorRef}
-        placeholder={CONTENT_PLACEHOLDER}
-        isEmpty={isContentEmpty}
-        onInput={syncContent}
-      />
+      <div className={editorMode === "preview" ? "hidden" : undefined}>
+        <PostRichTextEditor
+          editorRef={editorRef}
+          placeholder={CONTENT_PLACEHOLDER}
+          isEmpty={isContentEmpty}
+          errorMessage={contentError}
+          onInput={() => {
+            syncContent();
+            setContentError(null);
+          }}
+        />
+      </div>
+      {editorMode === "preview" && (
+        <PostDraftPreview title={previewTitle} html={previewHtml} />
+      )}
       <input ref={contentInputRef} type="hidden" name="content" defaultValue={initialContent} />
-      <div className="flex justify-end gap-2">
-        <Link href={cancelHref} className={buttonSecondaryClass}>
+      <div className="flex items-center justify-between gap-2">
+        <div
+          role="tablist"
+          aria-label="본문 작성 모드"
+          className="inline-flex shrink-0 rounded-lg border border-zinc-200 p-1 dark:border-zinc-700"
+        >
+          {(
+            [
+              { id: "write" as const, label: "작성" },
+              { id: "preview" as const, label: "미리보기" },
+            ] as const
+          ).map((tab) => {
+            const isActive = editorMode === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => handleEditorModeChange(tab.id)}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
+                  isActive
+                    ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                    : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                }`}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+        <Link href={cancelHref} className={`${buttonSecondaryClass} ml-auto`}>
           취소
         </Link>
-        <button type="submit" disabled={pending || isContentEmpty} className={buttonPrimaryClass}>
+        <button type="submit" disabled={pending || isContentEmpty || isTitleEmpty} className={buttonPrimaryClass}>
           {pending ? pendingLabel : submitLabel}
         </button>
         {deleteAction && (

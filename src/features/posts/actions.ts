@@ -21,6 +21,16 @@ export type PostActionState = {
   error?: string;
 };
 
+function revalidatePostListPaths(category: PostCategory, postId?: string) {
+  revalidatePath("/");
+  if (postId) {
+    revalidatePath(`/posts/${postId}`);
+  }
+  if (category === "notice") {
+    revalidatePath("/notices");
+  }
+}
+
 function resolvePostCategory(raw: FormDataEntryValue | null, userIsAdmin: boolean): PostCategory {
   if (!userIsAdmin) return "general";
   const parsed = postCategorySchema.safeParse(raw ?? "general");
@@ -74,7 +84,7 @@ export async function createPost(
     });
   }
 
-  revalidatePath("/");
+  revalidatePostListPaths(category, post.id);
   redirect(`/posts/${post.id}`);
 }
 
@@ -143,8 +153,10 @@ export async function updatePost(
     });
   }
 
-  revalidatePath(`/posts/${postId}`);
-  revalidatePath("/");
+  revalidatePostListPaths(nextCategory, postId);
+  if (post.category === "notice" && nextCategory !== "notice") {
+    revalidatePath("/notices");
+  }
   redirect(`/posts/${postId}`);
 }
 

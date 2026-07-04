@@ -37,19 +37,21 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
 - **글 작성 / 수정** — `PostForm` 공용 컴포넌트 (동일 UI·에디터)
   - 작성: `/write` — 취소 시 홈 이동
   - 수정: `/posts/[id]/edit` — 저장·글 삭제(soft delete)
+  - **작성 / 미리보기** 탭 — 에디터 DOM 유지(탭 전환 시 내용 보존), 발행 전 WYSIWYG 확인
+  - **에디터·발행 HTML 일치** — 공용 `.post-content` 스타일 + 확장 sanitize (목록·표·색상·정렬 등)
 - **관리자 게시글 분류** (탭 UI)
   - `general` — 일반게시글 (홈 피드)
   - `notice` — 공지사항 (홈 aside + `/notices` 게시판)
   - 일반 회원은 항상 일반게시글만 등록
 - **리치 텍스트 에디터** (서버 HTML sanitize)
   - 굵게·기울임·취소선·링크·글자 크기·색상·정렬
-  - **이미지** 업로드 (JPEG/PNG/WebP, 최대 100MB) — 선택 후 X 삭제, 좌·가운데·우 정렬
+  - **이미지** 업로드 (JPEG/PNG/WebP/**GIF**, 최대 100MB) — 선택 후 X 삭제, 좌·가운데·우 정렬
   - **동영상** 업로드 (MP4/WebM/MOV, 최대 1GB) — 진행률·취소, 커버 프레임 드래그 선택
   - **YouTube** embed 삽입
   - 툴바 아이콘 버튼은 border 없는 플랫 스타일 (`크기` 드롭다운만 border 유지)
   - **키보드 단축키**
     - `Tab` / `Shift+Tab` — 들여쓰기 / 내어쓰기
-    - 들여쓰기 줄 맨 앞에서 `Backspace` — 내어쓰기
+    - 들여쓰기 줄 맨 앞에서 `Backspace` — 내어쓰기 (커서 점프 없음)
     - `Ctrl+B` / `Ctrl+I` / `Ctrl+K` / `Ctrl+Shift+S` — 굵게 / 기울임 / 링크 / 취소선
     - `Shift+Enter` — 줄바꿈(soft break)
 - **홈 글 목록**
@@ -71,9 +73,14 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
 ### 댓글
 
 - 댓글 작성 / 삭제 (soft delete)
-- 1단계 대댓글 (중첩 스레드)
-- 리치 텍스트 (이미지·링크) — 에디터 하단 등록·취소 버튼
-- 작성자 표시 이름·아바타 표시
+- **무한 깊이 스레드** — depth별 들여쓰기·세로선, `↳ @username에게 답글` 표시
+  - depth 0 직계 답글은 기본 노출, **depth 1+** 하위는 **`답글 보기 (n)`** / `답글 숨기기` 접기
+- **댓글 정렬** — 최신순 / 인기순 / 오래된순 (`?commentSort=`, 필터 아이콘 드롭다운)
+  - 최상위 댓글만 정렬, 답글은 작성순 유지
+- 글 상세 **댓글 (n)** 헤더 + 정렬 필터 (왼쪽 정렬)
+- 리치 텍스트 (이미지·링크) — JPEG/PNG/WebP/**GIF** (최대 5MB)
+- 에디터 하단 등록·취소 버튼
+- 작성자 표시 이름·아바타, **좋아요 → 답글 → 신고/삭제** 액션 순
 - 댓글 카드 border 없음, **작성 폼**은 border 유지
 - 답글 등록 성공 시 답글창 자동 닫힘, 일반 댓글은 입력 초기화
 
@@ -179,7 +186,9 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
 - **모바일 헤더** (`md` 미만): 2행 구성
   - 1행: `테마` · 가운데 **로고**(축소) · `알림`(로그인) / `로그인`(비로그인)
   - 2행: **전체폭 검색바**
-- **모바일 하단 탭바** (`MobileBottomNav`, `md` 미만): 전체글 · 팔로우 글 · **등록**(가운데 강조) · 공지사항 · 프로필
+- **모바일 하단 탭바** (`MobileBottomNav`, `md` 미만): 홈 · 팔로우 · **+**(글쓰기) · 알림 · MY
+  - 안 읽은 알림 뱃지 폴링
+- **모바일 상단 햄버거 메뉴** (`MobileHeaderMenu`): 전체글 · 팔로우글 · 공지사항 · 다크모드
   - 현재 경로·`feed` 기준 활성 탭 강조, iOS safe-area 대응
   - **글쓰기·수정·관리자·로그인** 페이지에서는 탭바 숨김 (폼/관리 UI와 겹침 방지)
   - 프로필 → 프로필 페이지 설정 모달에서 **로그아웃 · 관리자** 진입 (본인·관리자만)
@@ -191,6 +200,7 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
 - MinIO(S3 호환) — `uploads` 버킷
 - prefix: `avatars/`, `posts/`, `comments/`
 - presigned PUT 업로드 + 공개 읽기
+- **게시글·댓글 GIF** — `image/gif` MIME, 확장자 fallback 지원
 - **`next/image` 최적화** — 아바타·글 썸네일 등 원격 이미지 (`RemoteImage`, S3·YouTube `remotePatterns`)
 - **HTTPS 운영** — `S3_PUBLIC_URL` / `NEXT_PUBLIC_S3_PUBLIC_URL` (Docker **빌드 시** 주입)
 - Cloudflare Tunnel로 `s3.heavyjungle.com` → MinIO 노출
@@ -210,7 +220,7 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
 - `npm run dev` 시 로컬 DB 자동 기동 (`scripts/ensure-local-db.sh`)
 - NAS 배포: `scripts/nas-deploy.sh`, `scripts/nas-migrate.sh`, `scripts/nas-doctor.sh`
 - **GitHub Actions CI** (`.github/workflows/ci.yml`) — push/PR마다 lint + typecheck + **unit test**
-- **Vitest** — 권한·레이트리밋·미디어 URL 정책·메타데이터·신고 검증 등 핵심 순수 로직 테스트 (`npm run test`)
+- **Vitest** — 권한·레이트리밋·미디어 URL 정책·메타데이터·신고 검증·**게시글 HTML sanitize**·**댓글 정렬**·**GIF 업로드** 등 (`npm run test`)
 - **구조화 서버 로깅** (`src/lib/logger.ts`, `src/instrumentation.ts`) — 운영 RSC 오류를 `docker logs`에서 추적
 - NAS 수동 배포 워크플로 (`deploy-nas.yml`, `workflow_dispatch`)
 
@@ -318,7 +328,7 @@ npm run db:migrate   # 마이그레이션
 | `/` | 글 목록 (정렬·썸네일·전체/팔로우 피드) |
 | `/notices` | 공지사항 게시판 |
 | `/write` | 글 작성 |
-| `/posts/[id]` | 글 상세 |
+| `/posts/[id]` | 글 상세 (댓글 정렬 `?commentSort=`) |
 | `/posts/[id]/edit` | 글 수정 |
 | `/login` | 로그인 |
 | `/login/find-username` | 아이디 찾기 |
@@ -343,6 +353,7 @@ npm run db:migrate   # 마이그레이션
 | `npm run build` | 프로덕션 빌드 |
 | `npm run start` | 프로덕션 서버 |
 | `npm run lint` | ESLint |
+| `npm run test` | Vitest 단위 테스트 |
 | `npm run docker:up` / `docker:down` | 로컬 Docker |
 | `npm run db:migrate` | 마이그레이션 |
 | `npm run deploy:nas` | NAS 배포 |

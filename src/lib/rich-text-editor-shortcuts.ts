@@ -30,6 +30,14 @@ function findBlockInEditor(node: Node, editor: HTMLElement): HTMLElement {
   return editor;
 }
 
+function getCaretBlock(editor: HTMLElement): HTMLElement | null {
+  const range = getSelectionRange();
+  if (!range || !editor.contains(range.commonAncestorContainer)) return null;
+
+  const block = findBlockInEditor(range.commonAncestorContainer, editor);
+  return block === editor ? null : block;
+}
+
 function ensureCaretBlock(editor: HTMLElement): HTMLElement | null {
   const range = getSelectionRange();
   if (!range || !editor.contains(range.commonAncestorContainer)) return null;
@@ -40,12 +48,36 @@ function ensureCaretBlock(editor: HTMLElement): HTMLElement | null {
   const wrapper = document.createElement("div");
   if (editor.childNodes.length === 0) {
     wrapper.appendChild(document.createElement("br"));
-  } else {
-    while (editor.firstChild) {
-      wrapper.appendChild(editor.firstChild);
+    editor.appendChild(wrapper);
+  } else if (range.collapsed) {
+    const anchor = range.startContainer;
+    const offset = range.startOffset;
+
+    if (anchor === editor) {
+      wrapper.appendChild(document.createElement("br"));
+      const ref = offset < editor.childNodes.length ? editor.childNodes[offset] : null;
+      editor.insertBefore(wrapper, ref);
+    } else {
+      let target: Node = anchor;
+      if (target.nodeType === Node.TEXT_NODE && target.parentNode) {
+        target = target.parentNode;
+      }
+      if (target.parentNode === editor && target instanceof HTMLElement) {
+        editor.insertBefore(wrapper, target);
+        wrapper.appendChild(target);
+      } else {
+        wrapper.appendChild(document.createElement("br"));
+        range.insertNode(wrapper);
+      }
     }
+  } else {
+    return null;
   }
-  editor.appendChild(wrapper);
+
+  const caret = document.createRange();
+  caret.selectNodeContents(wrapper);
+  caret.collapse(false);
+  restoreSelection(caret);
   return wrapper;
 }
 
@@ -77,7 +109,7 @@ function isCaretAtBlockStart(editor: HTMLElement, block: HTMLElement): boolean {
 }
 
 export function indentEditorSelection(editor: HTMLElement, outdent: boolean): boolean {
-  const block = ensureCaretBlock(editor);
+  const block = outdent ? getCaretBlock(editor) : ensureCaretBlock(editor);
   if (!block) return false;
 
   const current = getBlockPaddingLeftEm(block);
@@ -123,10 +155,9 @@ export function handleRichTextEditorKeyDown(
   handlers: RichTextShortcutHandlers,
 ): void {
   if (event.key === "Backspace" && !event.metaKey && !event.ctrlKey && !event.altKey) {
-    const block = ensureCaretBlock(editor);
+    const block = getCaretBlock(editor);
     if (
       block &&
-      block !== editor &&
       getBlockPaddingLeftEm(block) > 0 &&
       isCaretAtBlockStart(editor, block)
     ) {

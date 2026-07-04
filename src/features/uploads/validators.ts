@@ -42,7 +42,7 @@ export type ConfirmAvatarUploadInput = z.infer<typeof confirmAvatarUploadSchema>
 export const commentImageUploadIntentSchema = z.object({
   filename: z.string().trim().min(1, "파일명이 필요합니다.").max(255),
   contentType: z.enum(COMMENT_IMAGE_ALLOWED_CONTENT_TYPES, {
-    message: "JPEG, PNG, WebP 이미지만 업로드할 수 있습니다.",
+    message: "JPEG, PNG, WebP, GIF 이미지만 업로드할 수 있습니다.",
   }),
   size: z
     .number()
@@ -56,7 +56,7 @@ export type CommentImageUploadIntent = z.infer<typeof commentImageUploadIntentSc
 export const postImageUploadIntentSchema = z.object({
   filename: z.string().trim().min(1, "파일명이 필요합니다.").max(255),
   contentType: z.enum(POST_IMAGE_ALLOWED_CONTENT_TYPES, {
-    message: "JPEG, PNG, WebP 이미지만 업로드할 수 있습니다.",
+    message: "JPEG, PNG, WebP, GIF 이미지만 업로드할 수 있습니다.",
   }),
   size: z
     .number()
@@ -82,8 +82,8 @@ export const postVideoUploadIntentSchema = z.object({
 export type PostVideoUploadIntent = z.infer<typeof postVideoUploadIntentSchema>;
 
 const storageImageKeyPattern = (prefix: "posts" | "comments") =>
-  new RegExp(`^${prefix}/[0-9a-f-]+/[0-9a-f-]+\\.(jpg|png|webp)$`, "i");
-const storagePostAssetKeyPattern = /^posts\/[0-9a-f-]+\/[0-9a-f-]+\.(jpg|png|webp|mp4|webm|mov)$/i;
+  new RegExp(`^${prefix}/[0-9a-f-]+/[0-9a-f-]+\\.(jpg|png|webp|gif)$`, "i");
+const storagePostAssetKeyPattern = /^posts\/[0-9a-f-]+\/[0-9a-f-]+\.(jpg|png|webp|gif|mp4|webm|mov)$/i;
 
 export const deletePostImageSchema = z.object({
   key: z

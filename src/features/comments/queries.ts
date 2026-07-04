@@ -5,6 +5,7 @@
 import "server-only";
 
 import { asc, eq } from "drizzle-orm";
+import { compareComments, type CommentSort } from "@/features/comments/comment-sort";
 import { db } from "@/server/db";
 import { comments, users } from "@/server/db/schema";
 
@@ -68,8 +69,14 @@ export async function getCommentsByPost(postId: string): Promise<CommentFlat[]> 
   }));
 }
 
-/** 평면 댓글 목록 → 무한 깊이 트리 */
-export function buildCommentTree(flat: CommentFlat[]): CommentNode[] {
+function sortReplySiblings(siblings: CommentFlat[]): CommentFlat[] {
+  return [...siblings].sort(
+    (a, b) => a.createdAt.getTime() - b.createdAt.getTime() || a.id.localeCompare(b.id),
+  );
+}
+
+/** 평면 댓글 목록 → 무한 깊이 트리 (최상위만 sort 적용, 답글은 작성순) */
+export function buildCommentTree(flat: CommentFlat[], sort: CommentSort = "latest"): CommentNode[] {
   const byParent = new Map<string | null, CommentFlat[]>();
 
   for (const comment of flat) {
@@ -79,7 +86,13 @@ export function buildCommentTree(flat: CommentFlat[]): CommentNode[] {
   }
 
   function buildChildren(parentId: string | null): CommentNode[] {
-    return (byParent.get(parentId) ?? []).map((comment) => ({
+    const siblings = byParent.get(parentId) ?? [];
+    const ordered =
+      parentId === null
+        ? [...siblings].sort((a, b) => compareComments(a, b, sort))
+        : sortReplySiblings(siblings);
+
+    return ordered.map((comment) => ({
       ...comment,
       replies: buildChildren(comment.id),
     }));
@@ -93,9 +106,12 @@ export function buildCommentThreads(flat: CommentFlat[]): CommentNode[] {
   return buildCommentTree(flat);
 }
 
-export async function getCommentTreeByPost(postId: string): Promise<CommentNode[]> {
+export async function getCommentTreeByPost(
+  postId: string,
+  sort: CommentSort = "latest",
+): Promise<CommentNode[]> {
   const flat = await getCommentsByPost(postId);
-  return buildCommentTree(flat);
+  return buildCommentTree(flat, sort);
 }
 
 /** @deprecated getCommentTreeByPost 사용 */

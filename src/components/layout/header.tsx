@@ -2,9 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useId, useRef, useState } from "react";
+import { Suspense, useEffect, useId, useRef, useState } from "react";
 import { LoginModal } from "@/components/auth/login-modal";
 import { SignUpModal } from "@/components/auth/signup-modal";
+import { MobileHeaderMenu } from "@/components/layout/mobile-header-menu";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { signOut } from "@/features/auth/actions";
 import { NotificationBell } from "@/features/notifications/components/notification-bell";
@@ -261,7 +262,12 @@ export function Header({ user, unreadNotificationCount = 0 }: HeaderProps) {
         <div className="px-4 pb-2 md:hidden">
           <div className="grid h-14 grid-cols-[1fr_auto_1fr] items-center gap-2">
             <div className="flex items-center gap-1 justify-self-start">
-              <ThemeToggle />
+              <Suspense fallback={<div className="h-10 w-10 shrink-0 md:hidden" aria-hidden="true" />}>
+                <MobileHeaderMenu
+                  isLoggedIn={!!user}
+                  onLoginClick={openLoginModal}
+                />
+              </Suspense>
             </div>
 
             <LogoLink heightClass="h-7" className="justify-self-center" />

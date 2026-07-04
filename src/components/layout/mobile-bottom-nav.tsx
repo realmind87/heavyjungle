@@ -2,15 +2,18 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 type MobileBottomNavProps = {
   username: string | null;
+  initialUnreadCount?: number;
 };
 
-function AllPostsIcon() {
+function HomeIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5" aria-hidden="true">
-      <path strokeLinecap="round" d="M4 7h16M4 12h16M4 17h10" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 22V12h6v10" />
     </svg>
   );
 }
@@ -25,11 +28,14 @@ function FollowingIcon() {
   );
 }
 
-function NoticeIcon() {
+function BellIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 11l18-5v12L3 14v-3z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M11.6 16.8a3 3 0 0 1-5.8-1.6" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"
+      />
     </svg>
   );
 }
@@ -51,11 +57,57 @@ function PlusIcon() {
   );
 }
 
-/** 모바일 전용 하단 탭바 — 전체글 / 팔로우 / 공지사항 / 프로필 */
-export function MobileBottomNav({ username }: MobileBottomNavProps) {
+type NavItem = {
+  key: string;
+  label: string;
+  href: string;
+  active: boolean;
+  icon: React.ReactNode;
+  badge?: number;
+  ariaLabel?: string;
+};
+
+/** 모바일 전용 하단 탭바 — 홈 / 팔로우 / 등록 / 알림 / MY */
+export function MobileBottomNav({ username, initialUnreadCount = 0 }: MobileBottomNavProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const feed = searchParams.get("feed");
+  const isLoggedIn = !!username;
+  const [unreadCount, setUnreadCount] = useState(initialUnreadCount);
+
+  useEffect(() => {
+    setUnreadCount(initialUnreadCount);
+  }, [initialUnreadCount]);
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setUnreadCount(0);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function refreshUnreadCount() {
+      try {
+        const res = await fetch("/api/notifications/unread-count", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = (await res.json()) as { unreadCount: number };
+        if (!cancelled) setUnreadCount(data.unreadCount);
+      } catch {
+        // ignore
+      }
+    }
+
+    const onFocus = () => void refreshUnreadCount();
+    const timer = window.setInterval(refreshUnreadCount, 30_000);
+
+    window.addEventListener("focus", onFocus);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [isLoggedIn]);
 
   const hideNav =
     pathname.startsWith("/write") ||
@@ -66,49 +118,62 @@ export function MobileBottomNav({ username }: MobileBottomNavProps) {
   if (hideNav) return null;
 
   const isHome = pathname === "/";
-  const items = [
+  const profileHref = username ? `/u/${username}` : "/login";
+  const profileActive = username ? pathname.startsWith(`/u/${username}`) : pathname.startsWith("/login");
+
+  const items: NavItem[] = [
     {
-      key: "all",
-      label: "전체글",
+      key: "home",
+      label: "홈",
       href: "/",
       active: isHome && feed !== "following",
-      icon: <AllPostsIcon />,
+      icon: <HomeIcon />,
     },
     {
       key: "following",
-      label: "팔로우 글",
-      href: "/?feed=following",
+      label: "팔로우",
+      href: isLoggedIn ? "/?feed=following" : "/login?next=/?feed=following",
       active: isHome && feed === "following",
       icon: <FollowingIcon />,
     },
     {
-      key: "notices",
-      label: "공지사항",
-      href: "/notices",
-      active: pathname.startsWith("/notices"),
-      icon: <NoticeIcon />,
+      key: "notifications",
+      label: "알림",
+      href: isLoggedIn ? "/notifications" : "/login?next=/notifications",
+      active: pathname.startsWith("/notifications"),
+      icon: <BellIcon />,
+      badge: unreadCount,
+      ariaLabel: unreadCount > 0 ? `알림, ${unreadCount}개 안 읽음` : "알림",
     },
     {
-      key: "profile",
-      label: "프로필",
-      href: username ? `/u/${username}` : "/login",
-      active: username ? pathname === `/u/${username}` : pathname.startsWith("/login"),
+      key: "my",
+      label: "MY",
+      href: profileHref,
+      active: profileActive,
       icon: <ProfileIcon />,
     },
   ];
 
-  function navItem(item: (typeof items)[number]) {
+  function navItem(item: NavItem) {
     return (
       <Link
         href={item.href}
         aria-current={item.active ? "page" : undefined}
-        className={`flex flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium transition ${
+        aria-label={item.ariaLabel}
+        className={`relative flex flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium transition ${
           item.active
             ? "text-zinc-900 dark:text-zinc-50"
             : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
         }`}
       >
-        {item.icon}
+        <span className="relative inline-flex">
+          {item.icon}
+          {item.badge != null && item.badge > 0 && (
+            <span className="absolute -right-1.5 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none text-white">
+              {item.badge > 99 ? "99+" : item.badge}
+            </span>
+          )}
+        </span>
         <span>{item.label}</span>
       </Link>
     );

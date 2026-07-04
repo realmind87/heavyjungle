@@ -7,7 +7,9 @@ import { randomUUID } from "node:crypto";
 import {
   AVATAR_CONTENT_TYPE_TO_EXT,
   type AvatarContentType,
+  COMMENT_IMAGE_CONTENT_TYPE_TO_EXT,
   type CommentImageContentType,
+  POST_IMAGE_CONTENT_TYPE_TO_EXT,
   type PostImageContentType,
   POST_VIDEO_CONTENT_TYPE_TO_EXT,
   type PostVideoContentType,
@@ -19,12 +21,12 @@ export function generateAvatarObjectKey(userId: string, contentType: AvatarConte
 }
 
 export function generateCommentImageObjectKey(userId: string, contentType: CommentImageContentType): string {
-  const ext = AVATAR_CONTENT_TYPE_TO_EXT[contentType];
+  const ext = COMMENT_IMAGE_CONTENT_TYPE_TO_EXT[contentType];
   return `comments/${userId}/${randomUUID()}.${ext}`;
 }
 
 export function generatePostImageObjectKey(userId: string, contentType: PostImageContentType): string {
-  const ext = AVATAR_CONTENT_TYPE_TO_EXT[contentType];
+  const ext = POST_IMAGE_CONTENT_TYPE_TO_EXT[contentType];
   return `posts/${userId}/${randomUUID()}.${ext}`;
 }
 

@@ -18,12 +18,13 @@ import { resolveStoragePublicUrl } from "@/lib/storage-url";
 import { formatRelativeTime } from "@/lib/time";
 import { canModifyPost } from "@/server/auth/permissions";
 import { getCurrentUser } from "@/server/auth/current-user";
+import { parseCommentSort } from "@/features/comments/comment-sort";
 import { buildBackHrefFromListParam } from "@/features/posts/post-list-state";
 import { linkMutedClass, pageTitleClass } from "@/lib/ui-classes";
 
 type PageProps = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ list?: string }>;
+  searchParams: Promise<{ list?: string; commentSort?: string }>;
 };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -66,7 +67,8 @@ function EditIcon() {
 
 export default async function PostDetailPage({ params, searchParams }: PageProps) {
   const { id: postId } = await params;
-  const { list } = await searchParams;
+  const { list, commentSort } = await searchParams;
+  const commentSortValue = parseCommentSort(commentSort);
   const user = await getCurrentUser();
 
   const post = await getPostById(postId);
@@ -151,7 +153,13 @@ export default async function PostDetailPage({ params, searchParams }: PageProps
           )}
         </div>
 
-        <CommentSection postId={postId} user={user} />
+        <CommentSection
+          postId={postId}
+          user={user}
+          sort={commentSortValue}
+          listParam={list}
+          commentCount={post.commentCount}
+        />
       </main>
     </div>
   );

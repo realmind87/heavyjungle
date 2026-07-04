@@ -1,8 +1,10 @@
 /**
  * 글 상세 댓글 영역 — 서버에서 스레드 조회 후 클라이언트에 직렬화 데이터 전달.
  */
+import type { CommentSort } from "@/features/comments/comment-sort";
 import { getCommentTreeByPost, type CommentFlat, type CommentNode } from "@/features/comments/queries";
 import { CommentForm } from "@/features/comments/components/comment-form";
+import { CommentSortFilter } from "@/features/comments/components/comment-sort-filter";
 import { CommentThread, type SerializableCommentNode } from "@/features/comments/components/comment-item";
 import { getUserCommentLikesForPost } from "@/features/likes/queries";
 import { canModifyComment } from "@/server/auth/permissions";
@@ -13,6 +15,9 @@ import { resolveStoragePublicUrl } from "@/lib/storage-url";
 type CommentSectionProps = {
   postId: string;
   user: User | null;
+  sort: CommentSort;
+  listParam?: string;
+  commentCount: number;
 };
 
 function serializeComment(
@@ -52,9 +57,9 @@ function serializeTree(
   }));
 }
 
-export async function CommentSection({ postId, user }: CommentSectionProps) {
+export async function CommentSection({ postId, user, sort, listParam, commentCount }: CommentSectionProps) {
   const [tree, likedCommentIds] = await Promise.all([
-    getCommentTreeByPost(postId),
+    getCommentTreeByPost(postId, sort),
     user ? getUserCommentLikesForPost(user.id, postId) : Promise.resolve(new Set<string>()),
   ]);
   const serialized = serializeTree(tree, user, likedCommentIds);
@@ -68,6 +73,11 @@ export async function CommentSection({ postId, user }: CommentSectionProps) {
       ) : (
         <p className={`mt-4 ${mutedTextClass}`}>댓글을 작성하려면 로그인하세요.</p>
       )}
+
+      <div className="mt-6 flex items-center gap-3">
+        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">댓글 ({commentCount})</h2>
+        {commentCount > 0 && <CommentSortFilter sort={sort} listParam={listParam} />}
+      </div>
 
       <div>
         {serialized.length === 0 ? (
