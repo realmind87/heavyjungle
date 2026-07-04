@@ -1,15 +1,7 @@
+"use client";
+
 import { useEffect, type RefObject } from "react";
-
-export const MAIN_CONTENT_ID = "main-content";
-
-export const FOCUSABLE_SELECTOR =
-  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
-export function getFocusableElements(container: HTMLElement) {
-  return Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
-    (el) => !el.hasAttribute("disabled") && el.getAttribute("aria-hidden") !== "true",
-  );
-}
+import { getFocusableElements } from "@/lib/a11y";
 
 /** ESC로 닫기 — 드롭다운·경량 패널용 */
 export function useDismissOnEscape(isOpen: boolean, onClose: () => void) {

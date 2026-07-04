@@ -23,6 +23,7 @@ ENV S3_FORCE_PATH_STYLE=true
 ARG S3_PUBLIC_URL=http://localhost:9000/uploads
 ENV S3_PUBLIC_URL=${S3_PUBLIC_URL}
 ENV NEXT_PUBLIC_S3_PUBLIC_URL=${S3_PUBLIC_URL}
+ENV APP_URL=http://localhost:3000
 RUN npm run build
 
 FROM base AS runner
