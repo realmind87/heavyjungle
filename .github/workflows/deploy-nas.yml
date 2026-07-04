@@ -13,7 +13,18 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Skip when NAS secrets are missing
+        id: nas
+        env:
+          NAS_HOST: ${{ secrets.NAS_HOST }}
+        run: |
+          if [ -z "$NAS_HOST" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "NAS secrets not configured — skipping deploy."
+          fi
+
       - name: Deploy over SSH
+        if: steps.nas.outputs.skip != 'true'
         uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.NAS_HOST }}
