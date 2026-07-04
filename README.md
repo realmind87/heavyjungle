@@ -95,9 +95,11 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
 ### 알림
 
 - 헤더 **알림 벨** — 안 읽은 개수 배지, 클릭 시 목록 표시 + 전체 읽음 처리
-- 트리거: 팔로우, 댓글, 대댓글, 글 좋아요, 댓글 좋아요
+- **30초 폴링** + 창 포커스 시 `/api/notifications/unread-count`로 뱃지 자동 갱신
+- **`/notifications` 전용 페이지** — 페이지네이션(더 보기), 개별·전체 삭제, 방문 시 모두 읽음
+- 트리거: 팔로우, 댓글, 대댓글, 글 좋아요, 댓글 좋아요, **신고 처리 결과**(조치/기각)
 - 자기 자신 알림·차단 관계 알림 제외
-- 알림 클릭 시 해당 글/프로필로 이동
+- 알림 클릭 시 해당 글/프로필로 이동 (시스템 알림은 알림 페이지)
 
 ### 팔로우 · 팔로잉
 
@@ -136,7 +138,15 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
   - 차단 관계인 작성자/사용자는 결과에서 제외
 - **`/search` 전체 결과 페이지** — 게시글 / 사용자 탭, "더 보기" 페이지네이션
   - 게시글: **제목 + 본문** 검색 (HTML 태그 제거 후 매칭), 검색어 주변 문맥 스니펫 하이라이트
+  - **pg_trgm** GIN 인덱스 + 유사도(`similarity`) 기반 관련도 정렬
 - `SearchBar` + `useSearch` + `/api/search/posts` · `/api/search/users` (limit/offset)
+
+### SEO · 공유 미리보기
+
+- **`generateMetadata`** — 글 상세·프로필·루트 레이아웃 Open Graph / Twitter Card
+- 본문 첫 이미지 → OG 이미지, HTML 제거 plain text → description
+- **`/sitemap.xml`** — 홈·공지 + 최근 글·프로필 URL (최대 1000/500건)
+- **`/robots.txt`** — `/admin`, `/api/` 등 크롤 제외
 
 ### 관리자 (`/admin`)
 
@@ -187,6 +197,9 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
 - Drizzle ORM 마이그레이션 (`follows`, `blocks`, `posts.category` 등)
 - `npm run dev` 시 로컬 DB 자동 기동 (`scripts/ensure-local-db.sh`)
 - NAS 배포: `scripts/nas-deploy.sh`, `scripts/nas-migrate.sh`, `scripts/nas-doctor.sh`
+- **GitHub Actions CI** (`.github/workflows/ci.yml`) — push/PR마다 lint + typecheck
+- **구조화 서버 로깅** (`src/lib/logger.ts`, `src/instrumentation.ts`) — 운영 RSC 오류를 `docker logs`에서 추적
+- NAS 수동 배포 워크플로 (`deploy-nas.yml`, `workflow_dispatch`)
 
 ---
 
@@ -408,7 +421,8 @@ git pull origin main
 | `POST` | `/api/posts/[id]/view` | 조회수 증가 |
 | `GET` | `/api/search/posts?q=&limit=&offset=` | 게시글 제목/본문 검색 (페이지네이션) |
 | `GET` | `/api/search/users?q=&limit=&offset=` | 유저 닉네임/아이디 검색 (페이지네이션) |
-| `GET` | `/api/notifications` | 알림 목록·안읽음 개수 |
+| `GET` | `/api/notifications` | 알림 목록·안읽음 개수 (limit/offset) |
+| `GET` | `/api/notifications/unread-count` | 안읽음 개수만 (폴링용) |
 | `POST` | `/api/comments/[id]/like` | 댓글 좋아요 토글 |
 | `GET/POST` | `/api/items` | CRUD 데모 |
 
@@ -445,7 +459,8 @@ Resend (이메일)
 ## 향후 예정
 
 - Redis 세션 미러
-- GitHub Actions 자동 NAS 배포
+- GitHub Actions 자동 NAS 배포 (SSH 준비 후 `deploy-nas.yml` push 트리거 활성화)
+- 유닛/통합 테스트, `next/image` 이미지 최적화
 
 ---
 

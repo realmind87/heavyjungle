@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { SiteHeader } from "@/components/layout/site-header";
 import { getBlockRelation, listBlockedUsers } from "@/features/blocks/queries";
@@ -10,6 +11,7 @@ import { UserPostsLoadMore } from "@/features/profile/components/UserPostsLoadMo
 import { getPublicProfileByUsername, getUserPosts } from "@/features/profile/queries";
 import { getCurrentUser } from "@/server/auth/current-user";
 import { isAdmin } from "@/server/auth/permissions";
+import { buildPageMetadata } from "@/lib/metadata";
 import { resolveStoragePublicUrl } from "@/lib/storage-url";
 import { mutedTextClass, pageTitleClass, sectionTitleClass, successTextClass } from "@/lib/ui-classes";
 
@@ -17,6 +19,27 @@ type PageProps = {
   params: Promise<{ username: string }>;
   searchParams: Promise<{ cursor?: string; email?: string }>;
 };
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { username } = await params;
+  const profile = await getPublicProfileByUsername(username);
+
+  if (!profile) {
+    return buildPageMetadata({
+      title: "프로필을 찾을 수 없음",
+      path: `/u/${username}`,
+      noIndex: true,
+    });
+  }
+
+  const displayName = profile.displayName ?? profile.username;
+  return buildPageMetadata({
+    title: `${displayName} (@${profile.username})`,
+    description: profile.bio?.trim() || `${displayName}님의 Heavy Jungle 프로필`,
+    path: `/u/${profile.username}`,
+    imageUrl: resolveStoragePublicUrl(profile.avatarUrl),
+  });
+}
 
 /** 공개 프로필 페이지 — 서버 컴포넌트 */
 export default async function PublicProfilePage({ params, searchParams }: PageProps) {

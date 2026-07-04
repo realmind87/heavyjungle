@@ -3,12 +3,16 @@ import { SiteBottomNav } from "@/components/layout/site-bottom-nav";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { ToastProvider } from "@/components/providers/toast-provider";
+import { buildPageMetadata } from "@/lib/metadata";
 import { themeInitScript } from "@/lib/theme";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Heavy Jungle",
-  description: "Heavy Jungle is a community for developers to share their knowledge and experiences.",
+  ...buildPageMetadata({
+    title: "Heavy Jungle",
+    description: "Heavy Jungle — 개발자 커뮤니티",
+    path: "/",
+  }),
   icons: {
     icon: "/favicon.ico",
   },

@@ -75,6 +75,9 @@ export async function searchPosts(
     filters.push(notInArray(posts.authorId, hiddenAuthorIds));
   }
 
+  const plainContent = sql`regexp_replace(${posts.content}, '<[^>]+>', ' ', 'g')`;
+  const relevance = sql`GREATEST(similarity(${posts.title}, ${q}), similarity(${plainContent}, ${q}))`;
+
   const rows = await db
     .select({
       id: posts.id,
@@ -87,7 +90,7 @@ export async function searchPosts(
     .from(posts)
     .innerJoin(users, eq(posts.authorId, users.id))
     .where(and(...filters))
-    .orderBy(desc(posts.createdAt), desc(posts.id))
+    .orderBy(desc(relevance), desc(posts.createdAt), desc(posts.id))
     .limit(limit + 1)
     .offset(offset);
 
@@ -137,6 +140,8 @@ export async function searchUsers(
     filters.push(notInArray(users.id, hiddenUserIds));
   }
 
+  const relevance = sql`GREATEST(similarity(${users.username}, ${q}), similarity(COALESCE(${users.displayName}, ''), ${q}))`;
+
   const rows = await db
     .select({
       id: users.id,
@@ -146,7 +151,7 @@ export async function searchUsers(
     })
     .from(users)
     .where(and(...filters))
-    .orderBy(users.username)
+    .orderBy(desc(relevance), users.username)
     .limit(limit + 1)
     .offset(offset);
 

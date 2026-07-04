@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { SiteHeader } from "@/components/layout/site-header";
 import { PostMetaChip, postMetaChipClass } from "@/components/posts/post-meta-chip";
@@ -12,6 +13,7 @@ import { PostViewCount } from "@/features/posts/components/post-view-count";
 import { getPostById } from "@/features/posts/queries";
 import { ProfileAuthorLink } from "@/features/profile/components/ProfileAuthorLink";
 import { ReportButton } from "@/features/reports/components/report-button";
+import { buildPageMetadata, firstImageFromHtml, plainTextFromHtml } from "@/lib/metadata";
 import { resolveStoragePublicUrl } from "@/lib/storage-url";
 import { formatRelativeTime } from "@/lib/time";
 import { canModifyPost } from "@/server/auth/permissions";
@@ -23,6 +25,27 @@ type PageProps = {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ list?: string }>;
 };
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id } = await params;
+  const post = await getPostById(id);
+
+  if (!post || post.isDeleted) {
+    return buildPageMetadata({
+      title: "글을 찾을 수 없음",
+      path: `/posts/${id}`,
+      noIndex: true,
+    });
+  }
+
+  const ogImage = firstImageFromHtml(post.content);
+  return buildPageMetadata({
+    title: post.title,
+    description: plainTextFromHtml(post.content),
+    path: `/posts/${id}`,
+    imageUrl: ogImage ? (resolveStoragePublicUrl(ogImage) ?? ogImage) : undefined,
+  });
+}
 
 function CommentIcon() {
   return (
