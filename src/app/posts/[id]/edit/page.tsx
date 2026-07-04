@@ -22,7 +22,7 @@ export default async function PostEditPage({ params }: PageProps) {
   return (
     <div className="min-h-screen">
       <SiteHeader />
-      <main className="mx-auto max-w-3xl px-4 py-8">
+      <main className="mx-auto max-w-3xl px-4 py-8 pb-12 md:pb-8">
         <Link href={`/posts/${postId}`} className={linkMutedClass}>
           ← 글 보기
         </Link>

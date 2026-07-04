@@ -92,7 +92,7 @@ export default async function PostDetailPage({ params, searchParams }: PageProps
   return (
     <div className="min-h-screen">
       <SiteHeader />
-      <main className="mx-auto max-w-4xl px-4 py-8">
+      <main className="mx-auto max-w-4xl px-4 py-8 pb-20 md:pb-8">
         <Link href={backHref} className={linkMutedClass}>
           {backLabel}
         </Link>

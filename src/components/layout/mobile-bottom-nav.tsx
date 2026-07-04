@@ -57,6 +57,14 @@ export function MobileBottomNav({ username }: MobileBottomNavProps) {
   const searchParams = useSearchParams();
   const feed = searchParams.get("feed");
 
+  const hideNav =
+    pathname.startsWith("/write") ||
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/login") ||
+    pathname.includes("/edit");
+
+  if (hideNav) return null;
+
   const isHome = pathname === "/";
   const items = [
     {

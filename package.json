@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:nas:up": "docker compose -f docker-compose.nas.yml up -d --build",
@@ -52,6 +53,7 @@
     "eslint": "^9.28.0",
     "eslint-config-next": "^15.3.3",
     "tailwindcss": "^4.1.8",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.9"
   }
 }

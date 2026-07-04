@@ -1,15 +1,26 @@
+import { RemoteImage } from "@/components/ui/remote-image";
+
 /** 프로필 아바타 — S3 공개 URL 또는 이니셜 */
 type ProfileAvatarProps = {
   name: string;
   avatarUrl?: string | null;
-  size?: "xs" | "sm" | "md" | "lg";
+  size?: "2xs" | "xs" | "sm" | "md" | "lg";
 };
 
 const sizeClasses = {
+  "2xs": "h-8 w-8 text-xs",
   xs: "h-6 w-6 text-[10px]",
   sm: "h-10 w-10 text-sm",
   md: "h-16 w-16 text-xl",
   lg: "h-24 w-24 text-3xl",
+};
+
+const sizePx = {
+  "2xs": 32,
+  xs: 24,
+  sm: 40,
+  md: 64,
+  lg: 96,
 };
 
 export function ProfileAvatar({ name, avatarUrl, size = "md" }: ProfileAvatarProps) {
@@ -17,11 +28,13 @@ export function ProfileAvatar({ name, avatarUrl, size = "md" }: ProfileAvatarPro
   const className = `inline-flex shrink-0 items-center justify-center rounded-full bg-zinc-900 font-semibold text-white ring-2 ring-zinc-200 dark:bg-zinc-100 dark:text-zinc-900 dark:ring-zinc-700 ${sizeClasses[size]}`;
 
   if (avatarUrl) {
+    const px = sizePx[size];
     return (
-      // eslint-disable-next-line @next/next/no-img-element -- S3 공개 URL (resolveAvatarPublicUrl로 조합됨)
-      <img
+      <RemoteImage
         src={avatarUrl}
         alt={`${name} 아바타`}
+        width={px}
+        height={px}
         className={`${sizeClasses[size]} shrink-0 rounded-full object-cover ring-2 ring-zinc-200 dark:ring-zinc-700`}
       />
     );

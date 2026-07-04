@@ -4,8 +4,8 @@
  */
 import "server-only";
 
-import { createHash } from "node:crypto";
 import { headers } from "next/headers";
+import { hashRateLimitId, rateLimitErrorMessage } from "@/lib/rate-limit-utils";
 import { logger } from "@/lib/logger";
 import { redis } from "@/server/redis";
 
@@ -13,15 +13,12 @@ export type RateLimitResult =
   | { ok: true }
   | { ok: false; retryAfterSeconds: number };
 
+export { hashRateLimitId, rateLimitErrorMessage };
+
 async function ensureRedisConnected(): Promise<void> {
   if (redis.status === "wait" || redis.status === "end") {
     await redis.connect();
   }
-}
-
-/** 식별자 해시 — 이메일·아이디를 키에 그대로 넣지 않음 */
-export function hashRateLimitId(value: string): string {
-  return createHash("sha256").update(value.trim().toLowerCase()).digest("hex").slice(0, 32);
 }
 
 export async function getClientIp(): Promise<string> {
@@ -70,14 +67,6 @@ export async function checkRateLimit(options: {
     });
     return { ok: true };
   }
-}
-
-export function rateLimitErrorMessage(retryAfterSeconds: number): string {
-  if (retryAfterSeconds >= 60) {
-    const minutes = Math.ceil(retryAfterSeconds / 60);
-    return `요청이 너무 많습니다. ${minutes}분 후 다시 시도해 주세요.`;
-  }
-  return `요청이 너무 많습니다. ${retryAfterSeconds}초 후 다시 시도해 주세요.`;
 }
 
 /** 여러 키를 순서대로 검사 — 하나라도 초과하면 실패 */

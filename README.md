@@ -172,14 +172,17 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
   - 2행: **전체폭 검색바**
 - **모바일 하단 탭바** (`MobileBottomNav`, `md` 미만): 전체글 · 팔로우 글 · **등록**(가운데 강조) · 공지사항 · 프로필
   - 현재 경로·`feed` 기준 활성 탭 강조, iOS safe-area 대응
+  - **글쓰기·수정·관리자·로그인** 페이지에서는 탭바 숨김 (폼/관리 UI와 겹침 방지)
   - 프로필 → 프로필 페이지 설정 모달에서 **로그아웃 · 관리자** 진입 (본인·관리자만)
-- 관리자 패널 탭·검색 등 가로 넘침 요소는 `overflow-x-auto` 처리
+- 글 상세·검색·알림 등 하단 콘텐츠 **여백 보강** (`pb-20`) — 탭바와 겹치지 않도록
+- 관리자 패널·검색 탭·검색 등 가로 넘침 요소는 `overflow-x-auto` 처리
 
 ### 파일 · 스토리지
 
 - MinIO(S3 호환) — `uploads` 버킷
 - prefix: `avatars/`, `posts/`, `comments/`
 - presigned PUT 업로드 + 공개 읽기
+- **`next/image` 최적화** — 아바타·글 썸네일 등 원격 이미지 (`RemoteImage`, S3·YouTube `remotePatterns`)
 - **HTTPS 운영** — `S3_PUBLIC_URL` / `NEXT_PUBLIC_S3_PUBLIC_URL` (Docker **빌드 시** 주입)
 - Cloudflare Tunnel로 `s3.heavyjungle.com` → MinIO 노출
 
@@ -197,7 +200,8 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
 - Drizzle ORM 마이그레이션 (`follows`, `blocks`, `posts.category` 등)
 - `npm run dev` 시 로컬 DB 자동 기동 (`scripts/ensure-local-db.sh`)
 - NAS 배포: `scripts/nas-deploy.sh`, `scripts/nas-migrate.sh`, `scripts/nas-doctor.sh`
-- **GitHub Actions CI** (`.github/workflows/ci.yml`) — push/PR마다 lint + typecheck
+- **GitHub Actions CI** (`.github/workflows/ci.yml`) — push/PR마다 lint + typecheck + **unit test**
+- **Vitest** — 권한·레이트리밋·미디어 URL 정책·메타데이터·신고 검증 등 핵심 순수 로직 테스트 (`npm run test`)
 - **구조화 서버 로깅** (`src/lib/logger.ts`, `src/instrumentation.ts`) — 운영 RSC 오류를 `docker logs`에서 추적
 - NAS 수동 배포 워크플로 (`deploy-nas.yml`, `workflow_dispatch`)
 
@@ -460,7 +464,7 @@ Resend (이메일)
 
 - Redis 세션 미러
 - GitHub Actions 자동 NAS 배포 (SSH 준비 후 `deploy-nas.yml` push 트리거 활성화)
-- 유닛/통합 테스트, `next/image` 이미지 최적화
+- 본문 HTML 내 `<img>` next/image 변환, E2E 테스트
 
 ---
 

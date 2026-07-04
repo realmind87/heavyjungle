@@ -8,6 +8,7 @@ import { SignUpModal } from "@/components/auth/signup-modal";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { signOut } from "@/features/auth/actions";
 import { NotificationBell } from "@/features/notifications/components/notification-bell";
+import { ProfileAvatar } from "@/features/profile/components/ProfileAvatar";
 import { SearchBar } from "@/features/search/components/search-bar";
 
 type HeaderUser = {
@@ -60,15 +61,10 @@ function ProfileMenu({
         aria-expanded={isOpen}
         title={displayName}
         onClick={() => setIsOpen((prev) => !prev)}
-        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-sm font-semibold text-white ring-2 ring-zinc-200 transition hover:ring-zinc-300 dark:bg-zinc-100 dark:text-zinc-900 dark:ring-zinc-700 dark:hover:ring-zinc-600"
+        className="inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-900 text-sm font-semibold text-white ring-2 ring-zinc-200 transition hover:ring-zinc-300 dark:bg-zinc-100 dark:text-zinc-900 dark:ring-zinc-700 dark:hover:ring-zinc-600"
       >
         {avatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- S3 공개 URL 아바타
-          <img
-            src={avatarUrl}
-            alt={`${displayName} 프로필 이미지`}
-            className="h-full w-full rounded-full object-cover"
-          />
+          <ProfileAvatar name={displayName} avatarUrl={avatarUrl} size="sm" />
         ) : (
           getProfileInitial(displayName)
         )}
@@ -78,18 +74,7 @@ function ProfileMenu({
         <div className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
           <div className="border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
             <div className="flex items-center gap-2">
-              {avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element -- S3 공개 URL 아바타
-                <img
-                  src={avatarUrl}
-                  alt={`${displayName} 프로필 이미지`}
-                  className="h-7 w-7 rounded-full object-cover"
-                />
-              ) : (
-                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-zinc-200 text-xs font-semibold text-zinc-700 dark:bg-zinc-700 dark:text-zinc-100">
-                  {getProfileInitial(displayName)}
-                </span>
-              )}
+              <ProfileAvatar name={displayName} avatarUrl={avatarUrl} size="2xs" />
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">{displayName}</p>
                 {showUsername && (

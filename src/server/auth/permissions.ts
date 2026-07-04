@@ -4,6 +4,13 @@
 import "server-only";
 
 import { env } from "@/lib/env";
+import {
+  canModifyComment as canModifyCommentCore,
+  canModifyPost as canModifyPostCore,
+  isAdminRole,
+  isAdminUser,
+  isAuthor,
+} from "@/lib/permissions-core";
 import { getCurrentUser } from "@/server/auth/current-user";
 import type { User } from "@/server/db/schema/users";
 
@@ -11,31 +18,26 @@ export async function requireUser(): Promise<User | null> {
   return getCurrentUser();
 }
 
-export function isAuthor(userId: string, authorId: string): boolean {
-  return userId === authorId;
-}
+export { isAuthor };
 
 /** DB role=admin 또는 ADMIN_USERNAMES 환경변수에 포함된 계정 */
 export function isAdmin(user: User): boolean {
-  if (user.role === "admin") return true;
-  return env.ADMIN_USERNAMES.includes(user.username);
+  return isAdminUser(user, env.ADMIN_USERNAMES);
 }
 
 /** 글 수정·삭제 권한 — 작성자 본인 또는 관리자 */
 export function canModifyPost(user: User | null, authorId: string): boolean {
-  if (!user) return false;
-  return isAuthor(user.id, authorId) || isAdmin(user);
+  return canModifyPostCore(user, authorId, env.ADMIN_USERNAMES);
 }
 
 /** 댓글 삭제 권한 — 작성자 본인 또는 관리자 */
 export function canModifyComment(user: User | null, authorId: string): boolean {
-  if (!user) return false;
-  return isAuthor(user.id, authorId) || isAdmin(user);
+  return canModifyCommentCore(user, authorId, env.ADMIN_USERNAMES);
 }
 
 /** 관리자 전용 권한 */
 export function requireAdmin(user: User | null): user is User {
-  return user !== null && isAdmin(user);
+  return isAdminRole(user, env.ADMIN_USERNAMES);
 }
 
 /** 관리자 Server Action/페이지용 — 비관리자는 null */

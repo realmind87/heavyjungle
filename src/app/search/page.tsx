@@ -58,7 +58,7 @@ export default async function SearchPage({ searchParams }: PageProps) {
   return (
     <div className="min-h-screen">
       <SiteHeader />
-      <main className="mx-auto max-w-3xl px-4 py-8">
+      <main className="mx-auto max-w-3xl px-4 py-8 pb-20 md:pb-8">
         <h1 className={pageTitleClass}>
           {q ? (
             <>
@@ -76,13 +76,13 @@ export default async function SearchPage({ searchParams }: PageProps) {
             <div
               role="tablist"
               aria-label="검색 결과 종류"
-              className="mt-6 flex gap-1 border-b border-zinc-200 dark:border-zinc-700"
+              className="mt-6 flex gap-1 overflow-x-auto border-b border-zinc-200 dark:border-zinc-700"
             >
               <Link
                 href={buildSearchHref(q, "post")}
                 role="tab"
                 aria-selected={type === "post"}
-                className={`relative px-4 py-2.5 text-sm font-medium transition ${
+                className={`relative shrink-0 whitespace-nowrap px-4 py-2.5 text-sm font-medium transition ${
                   type === "post"
                     ? "text-zinc-900 dark:text-zinc-50"
                     : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
@@ -97,7 +97,7 @@ export default async function SearchPage({ searchParams }: PageProps) {
                 href={buildSearchHref(q, "user")}
                 role="tab"
                 aria-selected={type === "user"}
-                className={`relative px-4 py-2.5 text-sm font-medium transition ${
+                className={`relative shrink-0 whitespace-nowrap px-4 py-2.5 text-sm font-medium transition ${
                   type === "user"
                     ? "text-zinc-900 dark:text-zinc-50"
                     : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"

@@ -13,6 +13,7 @@ import {
   isSystemNotification,
 } from "@/features/notifications/display";
 import type { NotificationItem } from "@/features/notifications/types";
+import { ProfileAvatar } from "@/features/profile/components/ProfileAvatar";
 import { formatRelativeTime } from "@/lib/time";
 
 const PAGE_SIZE = 20;
@@ -101,17 +102,12 @@ export function NotificationsList({ initialItems, initialHasMore }: Notification
                     <path d="m9 12 2 2 4-4" />
                   </svg>
                 </span>
-              ) : item.actor.avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element -- S3 공개 URL 아바타
-                <img
-                  src={item.actor.avatarUrl}
-                  alt=""
-                  className="h-9 w-9 shrink-0 rounded-full object-cover"
-                />
               ) : (
-                <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-sm font-semibold text-zinc-700 dark:bg-zinc-700 dark:text-zinc-100">
-                  {(item.actor.displayName ?? item.actor.username).charAt(0).toUpperCase()}
-                </span>
+                <ProfileAvatar
+                  name={item.actor.displayName ?? item.actor.username}
+                  avatarUrl={item.actor.avatarUrl}
+                  size="sm"
+                />
               )}
               <span className="min-w-0">
                 <span className="text-zinc-900 dark:text-zinc-50">

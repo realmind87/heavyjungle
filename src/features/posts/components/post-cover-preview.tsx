@@ -1,4 +1,5 @@
 import type { PostCoverType } from "@/lib/post-cover-image";
+import { RemoteImage } from "@/components/ui/remote-image";
 
 type PostCoverPreviewProps = {
   coverImageUrl: string | null;
@@ -29,8 +30,15 @@ export function PostCoverPreview({ coverImageUrl, coverType, className = "" }: P
 
   if (coverImageUrl) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element -- S3/YouTube 썸네일
-      <img src={coverImageUrl} alt="" className={`object-cover ${className}`} />
+      <div className={`relative overflow-hidden ${className}`}>
+        <RemoteImage
+          src={coverImageUrl}
+          alt=""
+          fill
+          sizes="(max-width: 768px) 50vw, 320px"
+          className="object-cover"
+        />
+      </div>
     );
   }
 
