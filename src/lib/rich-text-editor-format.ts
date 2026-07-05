@@ -206,19 +206,19 @@ export function applyFontSizePx(editor: HTMLElement, size: string, range: Range)
   applyStylesToTextSegments(range, { fontSize: size });
 }
 
-function useCssStyles() {
+function enableCssStylesForExecCommand() {
   document.execCommand("styleWithCSS", false, "true");
 }
 
 /** 굵게·기울임·취소선 — 토글(해제 포함) */
 export function runFormatCommand(command: "bold" | "italic" | "strikeThrough" | "underline") {
-  useCssStyles();
+  enableCssStylesForExecCommand();
   document.execCommand(command, false);
 }
 
 /** 글자 색상 */
 export function runForeColor(color: string) {
-  useCssStyles();
+  enableCssStylesForExecCommand();
   document.execCommand("foreColor", false, color);
 }
 
