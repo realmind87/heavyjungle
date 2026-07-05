@@ -8,7 +8,8 @@ import {
   COMMENT_IMAGE_MAX_BYTES,
   resolveCommentImageContentType,
 } from "@/features/uploads/constants";
-import { prepareEditorImage, useRichTextImageControls } from "@/lib/rich-text-editor-image";
+import { prepareEditorImage, insertEditorBlockWithCaretLine, useRichTextImageControls } from "@/lib/rich-text-editor-image";
+import { EditorImageOverlay } from "@/lib/rich-text-editor-image-overlay";
 import { buttonPrimaryClass } from "@/lib/ui-classes";
 
 function preventToolbarBlur(event: React.MouseEvent) {
@@ -101,7 +102,8 @@ export function CommentRichTextEditor({
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
 
-  const { selectedImage, removeSelectedImage, deleteButtonPosition } = useRichTextImageControls({
+  const { selectedImage, removeSelectedImage, deleteButtonPosition, resizeHandlePosition, startImageResize } =
+    useRichTextImageControls({
     editorRef,
     storagePrefix: "comments",
     onInput,
@@ -159,18 +161,10 @@ export function CommentRichTextEditor({
       const image = document.createElement("img");
       image.src = publicUrl;
       image.alt = alt;
-      image.className = "my-1 max-h-48 max-w-full rounded-md";
+      image.className = "my-1 block max-w-full h-auto rounded-md";
       prepareEditorImage(image);
 
-      if (range) {
-        range.insertNode(image);
-        const caret = document.createRange();
-        caret.setStartAfter(image);
-        caret.collapse(true);
-        restoreSelection(caret);
-      } else {
-        editor.appendChild(image);
-      }
+      insertEditorBlockWithCaretLine(editor, range, image, restoreSelection);
 
       onInput();
     },
@@ -250,22 +244,17 @@ export function CommentRichTextEditor({
             onInput();
           }}
           autoFocus={autoFocus}
-          className={`${minHeightClass} w-full text-sm text-zinc-900 outline-none dark:text-zinc-50 [&_a]:text-blue-600 [&_a]:underline dark:[&_a]:text-blue-400 [&_img]:max-h-48 [&_img]:max-w-full [&_img]:rounded-md [&_img]:cursor-pointer [&_img.editor-image-selected]:outline [&_img.editor-image-selected]:outline-2 [&_img.editor-image-selected]:outline-blue-500 [&_img.editor-image-selected]:outline-offset-2`}
+          className={`${minHeightClass} w-full text-sm text-zinc-900 outline-none dark:text-zinc-50 [&_a]:text-blue-600 [&_a]:underline dark:[&_a]:text-blue-400 [&_img]:my-1 [&_img]:block [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-md [&_img]:cursor-pointer [&_img.editor-image-selected]:outline [&_img.editor-image-selected]:outline-2 [&_img.editor-image-selected]:outline-blue-500 [&_img.editor-image-selected]:outline-offset-2`}
         />
-        {selectedImage && deleteButtonPosition && (
-          <button
-            type="button"
-            aria-label="이미지 삭제"
-            title="이미지 삭제"
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => void removeSelectedImage()}
-            className="absolute z-10 inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow transition hover:bg-red-600"
-            style={{ top: deleteButtonPosition.top, left: deleteButtonPosition.left }}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3 w-3" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M18 6 6 18M6 6l12 12" />
-            </svg>
-          </button>
+        {selectedImage && (
+          <EditorImageOverlay
+            showResize={selectedImage instanceof HTMLImageElement}
+            deletePosition={deleteButtonPosition}
+            resizePosition={resizeHandlePosition}
+            onDelete={removeSelectedImage}
+            onResizePointerDown={startImageResize}
+            compact
+          />
         )}
       </div>
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SiteHeader } from "@/components/layout/site-header";
 import { AuthForm } from "@/components/auth/auth-form";
+import { SignUpPasswordFields } from "@/components/auth/signup-password-fields";
 import { signUp } from "@/features/auth/actions";
 import { inputClass, labelClass, pageTitleClass } from "@/lib/ui-classes";
 
@@ -19,10 +20,7 @@ export default function SignUpPage() {
           <span className={labelClass}>이메일</span>
           <input name="email" type="email" required autoComplete="email" className={inputClass} />
         </label>
-        <label className="block">
-          <span className={labelClass}>비밀번호</span>
-          <input name="password" type="password" required autoComplete="new-password" className={inputClass} />
-        </label>
+        <SignUpPasswordFields />
       </AuthForm>
       <p className="mt-4 text-center text-sm text-zinc-500 dark:text-zinc-400">
         이미 계정이 있으신가요?{" "}

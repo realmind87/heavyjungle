@@ -1,7 +1,7 @@
 "use client";
 
 import { OptimizedHtmlContent } from "@/components/ui/optimized-html-content";
-import { postContentProseClass } from "@/lib/post-content-styles";
+import { postContentImageClass, postContentProseClass } from "@/lib/post-content-styles";
 import { isPostHtmlContent } from "@/lib/sanitize-post-html";
 
 type PostContentRendererProps = {
@@ -18,7 +18,7 @@ export function PostContentRenderer({ content, className = "" }: PostContentRend
       <OptimizedHtmlContent
         html={content}
         className={rootClass}
-        imageClassName="my-2 max-w-full rounded-md"
+        imageClassName={postContentImageClass}
       />
     );
   }

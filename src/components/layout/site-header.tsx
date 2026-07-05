@@ -13,8 +13,11 @@ export async function SiteHeader() {
       user={
         user
           ? {
+              id: user.id,
               username: user.username,
               displayName: user.displayName ?? user.username,
+              displayNameInput: user.displayName ?? "",
+              bio: user.bio ?? "",
               avatarUrl: resolveStoragePublicUrl(user.avatarUrl),
               isAdmin: isAdmin(user),
             }

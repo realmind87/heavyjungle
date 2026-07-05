@@ -9,13 +9,17 @@ import { MobileHeaderMenu } from "@/components/layout/mobile-header-menu";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { signOut } from "@/features/auth/actions";
 import { NotificationBell } from "@/features/notifications/components/notification-bell";
+import { ProfileSetupGate } from "@/features/profile/components/ProfileSetupGate";
 import { ProfileAvatar } from "@/features/profile/components/ProfileAvatar";
 import { SearchBar } from "@/features/search/components/search-bar";
 import { useDismissOnEscape } from "@/hooks/use-a11y";
 
 type HeaderUser = {
+  id: string;
   username: string;
   displayName: string;
+  displayNameInput: string;
+  bio: string;
   avatarUrl?: string | null;
   isAdmin?: boolean;
 };
@@ -303,6 +307,20 @@ export function Header({ user, unreadNotificationCount = 0 }: HeaderProps) {
         onSwitchToLogin={() => setAuthModal("login")}
         next={authNext}
       />
+
+      {user && (
+        <Suspense fallback={null}>
+          <ProfileSetupGate
+            userId={user.id}
+            username={user.username}
+            initial={{
+              displayName: user.displayNameInput,
+              bio: user.bio,
+              avatarPublicUrl: user.avatarUrl ?? null,
+            }}
+          />
+        </Suspense>
+      )}
     </>
   );
 }

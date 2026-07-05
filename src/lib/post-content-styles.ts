@@ -1,3 +1,6 @@
+/** 게시글 본문 이미지 — 일반 에디터처럼 블록 + 가로 맞춤 */
+export const postContentImageClass = "my-2 block max-w-full h-auto rounded-lg";
+
 /** 게시글 본문 — 에디터·미리보기·상세 노출이 동일한 타이포/서식을 쓰도록 공유 */
 export const postContentProseClass =
   "post-content font-sans text-base text-zinc-900 dark:text-zinc-100 whitespace-pre-wrap break-words " +
@@ -12,8 +15,8 @@ export const postContentProseClass =
   "[&_blockquote]:my-2 [&_blockquote]:border-l-4 [&_blockquote]:border-zinc-300 [&_blockquote]:pl-4 [&_blockquote]:text-zinc-600 dark:[&_blockquote]:border-zinc-600 dark:[&_blockquote]:text-zinc-400 " +
   "[&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-zinc-100 [&_pre]:p-3 dark:[&_pre]:bg-zinc-800 " +
   "[&_code]:rounded [&_code]:bg-zinc-100 [&_code]:px-1 dark:[&_code]:bg-zinc-800 " +
-  "[&_img]:my-2 [&_img]:max-h-96 [&_img]:max-w-full [&_img]:rounded-lg " +
-  "[&_video]:my-3 [&_video]:max-h-[32rem] [&_video]:max-w-full [&_video]:rounded-lg " +
+  "[&_img]:my-2 [&_img]:block [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-lg " +
+  "[&_video]:my-3 [&_video]:block [&_video]:max-h-[32rem] [&_video]:max-w-full [&_video]:rounded-lg " +
   "[&_iframe]:my-3 [&_iframe]:aspect-video [&_iframe]:w-full [&_iframe]:max-w-full [&_iframe]:rounded-lg";
 
 /** 에디터 전용 — 선택·커서 등 편집 UI만 추가 */

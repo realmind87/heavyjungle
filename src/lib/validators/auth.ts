@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { passwordSchema } from "@/lib/validators/password";
 
 const usernameSchema = z
   .string()
@@ -9,18 +10,19 @@ const usernameSchema = z
 
 const emailSchema = z.email("올바른 이메일 형식이 아닙니다.");
 
-const passwordSchema = z
-  .string()
-  .min(8, "비밀번호는 8자 이상이어야 합니다.")
-  .max(128, "비밀번호는 128자 이하여야 합니다.");
-
 export { emailSchema, passwordSchema };
 
-export const signUpSchema = z.object({
-  username: usernameSchema,
-  email: emailSchema,
-  password: passwordSchema,
-});
+export const signUpSchema = z
+  .object({
+    username: usernameSchema,
+    email: emailSchema,
+    password: passwordSchema,
+    confirmPassword: z.string().min(1, "비밀번호 확인을 입력하세요."),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "비밀번호가 일치하지 않습니다.",
+    path: ["confirmPassword"],
+  });
 
 export const signInSchema = z.object({
   /** 이메일 또는 아이디 */

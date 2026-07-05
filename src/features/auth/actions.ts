@@ -2,6 +2,7 @@
 
 import { eq, or } from "drizzle-orm";
 import { redirect } from "next/navigation";
+import { withSetupProfileQuery } from "@/lib/profile-setup";
 import { signInSchema, signUpSchema } from "@/lib/validators/auth";
 import { hashPassword, verifyPassword } from "@/server/auth/password";
 import { clearSessionCookie, getSessionTokenFromCookies, setSessionCookie } from "@/server/auth/cookies";
@@ -41,6 +42,7 @@ export async function signUp(_prevState: AuthActionState, formData: FormData): P
     username: formData.get("username"),
     email: formData.get("email"),
     password: formData.get("password"),
+    confirmPassword: formData.get("confirmPassword"),
   });
 
   if (!parsed.success) {
@@ -69,7 +71,7 @@ export async function signUp(_prevState: AuthActionState, formData: FormData): P
   const token = await createSession(created.id);
   await setSessionCookie(token);
 
-  redirect(getSafeRedirectPath(formData.get("next")));
+  redirect(withSetupProfileQuery(getSafeRedirectPath(formData.get("next"))));
 }
 
 export async function signIn(_prevState: AuthActionState, formData: FormData): Promise<AuthActionState> {

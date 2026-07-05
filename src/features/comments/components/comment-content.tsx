@@ -26,7 +26,7 @@ export function CommentContent({ content, isDeleted, className = "" }: CommentCo
       <OptimizedHtmlContent
         html={content}
         className={`${commentHtmlClass} ${className}`}
-        imageClassName="my-1 max-h-64 max-w-full rounded-md"
+        imageClassName="my-1 block max-w-full h-auto rounded-md"
       />
     );
   }

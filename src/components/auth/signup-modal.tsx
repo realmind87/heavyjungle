@@ -1,8 +1,15 @@
 "use client";
 
 import { useActionState, useId, useRef } from "react";
+import { SignUpPasswordFields } from "@/components/auth/signup-password-fields";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { signUp, type AuthActionState } from "@/features/auth/actions";
 import { useModalA11y } from "@/hooks/use-a11y";
+
+const modalInputClass =
+  "w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-50 dark:focus:border-zinc-400 dark:focus:ring-zinc-700";
+
+const modalLabelClass = "mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300";
 
 type SignUpModalProps = {
   isOpen: boolean;
@@ -56,7 +63,17 @@ export function SignUpModal({ isOpen, onClose, onSwitchToLogin, next }: SignUpMo
           {next && <input type="hidden" name="next" value={next} />}
           <div className="space-y-4">
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">아이디</span>
+              <span className="mb-2 flex items-center gap-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                아이디
+                <InfoTooltip ariaLabel="아이디 입력 안내">
+                  <p className="font-medium text-zinc-800 dark:text-zinc-100">아이디 규칙</p>
+                  <ul className="mt-2 list-disc space-y-1 pl-4">
+                    <li>최소 4자 이상, 최대 20자 이하로 입력해 주세요.</li>
+                    <li>영문 소문자, 숫자, 특수문자(_)만 사용할 수 있습니다.</li>
+                    <li>특수문자(_)는 최대 1개까지 사용할 수 있습니다.</li>
+                  </ul>
+                </InfoTooltip>
+              </span>
               <input
                 type="text"
                 name="username"
@@ -79,17 +96,7 @@ export function SignUpModal({ isOpen, onClose, onSwitchToLogin, next }: SignUpMo
               />
             </label>
 
-            <label className="block">
-              <span className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">비밀번호</span>
-              <input
-                type="password"
-                name="password"
-                autoComplete="new-password"
-                required
-                placeholder="비밀번호를 입력하세요"
-                className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-50 dark:focus:border-zinc-400 dark:focus:ring-zinc-700"
-              />
-            </label>
+            <SignUpPasswordFields inputClassName={modalInputClass} labelClassName={modalLabelClass} />
           </div>
 
           {state.error && (

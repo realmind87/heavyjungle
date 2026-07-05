@@ -15,7 +15,9 @@ import {
   resolvePostImageContentType,
 } from "@/features/uploads/constants";
 import { postContentEditorExtraClass, postContentProseClass } from "@/lib/post-content-styles";
-import { prepareEditorImage, prepareEditorMedia, useRichTextImageControls } from "@/lib/rich-text-editor-image";
+import { prepareEditorImage, prepareEditorMedia, insertEditorBlockWithCaretLine, useRichTextImageControls } from "@/lib/rich-text-editor-image";
+import { EditorImageOverlay } from "@/lib/rich-text-editor-image-overlay";
+import { postContentImageClass } from "@/lib/post-content-styles";
 import { handleRichTextEditorKeyDown } from "@/lib/rich-text-editor-shortcuts";
 
 const FONT_SIZES = [
@@ -501,7 +503,8 @@ export function PostRichTextEditor({
   } | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
-  const { selectedImage, removeSelectedImage, deleteButtonPosition } = useRichTextImageControls({
+  const { selectedImage, removeSelectedImage, deleteButtonPosition, resizeHandlePosition, startImageResize } =
+    useRichTextImageControls({
     editorRef,
     storagePrefix: "posts",
     onInput,
@@ -673,18 +676,10 @@ export function PostRichTextEditor({
       const image = document.createElement("img");
       image.src = publicUrl;
       image.alt = alt;
-      image.className = "my-2 max-h-96 max-w-full rounded-lg";
+      image.className = postContentImageClass;
       prepareEditorImage(image);
 
-      if (range) {
-        range.insertNode(image);
-        const caret = document.createRange();
-        caret.setStartAfter(image);
-        caret.collapse(true);
-        restoreSelection(caret);
-      } else {
-        editor.appendChild(image);
-      }
+      insertEditorBlockWithCaretLine(editor, range, image, restoreSelection);
 
       onInput();
     },
@@ -704,18 +699,10 @@ export function PostRichTextEditor({
       video.src = publicUrl;
       video.controls = true;
       video.preload = "metadata";
-      video.className = "my-3 max-h-[32rem] max-w-full rounded-lg";
+      video.className = "my-3 block max-w-full max-h-[32rem] rounded-lg";
       prepareEditorMedia(video);
 
-      if (range) {
-        range.insertNode(video);
-        const caret = document.createRange();
-        caret.setStartAfter(video);
-        caret.collapse(true);
-        restoreSelection(caret);
-      } else {
-        editor.appendChild(video);
-      }
+      insertEditorBlockWithCaretLine(editor, range, video, restoreSelection);
 
       onInput();
       return video;
@@ -746,17 +733,9 @@ export function PostRichTextEditor({
     iframe.allow =
       "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
     iframe.allowFullscreen = true;
-    iframe.className = "my-3 aspect-video w-full max-w-full rounded-lg";
+    iframe.className = "my-3 block aspect-video w-full max-w-full rounded-lg";
 
-    if (range) {
-      range.insertNode(iframe);
-      const caret = document.createRange();
-      caret.setStartAfter(iframe);
-      caret.collapse(true);
-      restoreSelection(caret);
-    } else {
-      editor.appendChild(iframe);
-    }
+    insertEditorBlockWithCaretLine(editor, range, iframe, restoreSelection);
 
     onInput();
   }, [editorRef, focusEditor, onInput]);
@@ -1176,20 +1155,14 @@ export function PostRichTextEditor({
           onKeyDown={handleEditorKeyDown}
           className={`min-h-[200px] outline-none ${postContentProseClass} ${postContentEditorExtraClass}`}
         />
-        {selectedImage && deleteButtonPosition && (
-          <button
-            type="button"
-            aria-label="이미지 삭제"
-            title="이미지 삭제"
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => void removeSelectedImage()}
-            className="absolute z-10 inline-flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow transition hover:bg-red-600"
-            style={{ top: deleteButtonPosition.top, left: deleteButtonPosition.left }}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M18 6 6 18M6 6l12 12" />
-            </svg>
-          </button>
+        {selectedImage && (
+          <EditorImageOverlay
+            showResize={selectedImage instanceof HTMLImageElement}
+            deletePosition={deleteButtonPosition}
+            resizePosition={resizeHandlePosition}
+            onDelete={removeSelectedImage}
+            onResizePointerDown={startImageResize}
+          />
         )}
       </div>
 
