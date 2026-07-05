@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "qa:smoke": "node scripts/qa-smoke.mjs",
+    "e2e:seed": "node scripts/e2e-seed-user.mjs",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "docker:up": "docker compose up -d",
