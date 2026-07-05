@@ -19,6 +19,17 @@ import { prepareEditorImage, prepareEditorMedia, insertEditorBlockWithCaretLine,
 import { EditorImageOverlay } from "@/lib/rich-text-editor-image-overlay";
 import { postContentImageClass } from "@/lib/post-content-styles";
 import { handleRichTextEditorKeyDown } from "@/lib/rich-text-editor-shortcuts";
+import {
+  applyEditorFormat,
+  applyFontSizePx,
+  prepareEditorSelection,
+  runFormatCommand,
+  runForeColor,
+  saveEditorSelection,
+  wrapRangeWithElement,
+  getSelectionRange,
+  restoreSelection,
+} from "@/lib/rich-text-editor-format";
 
 const FONT_SIZES = [
   { label: "작게", value: "14px" },
@@ -50,95 +61,6 @@ const VIDEO_COVER_MAX_FRAMES = 30;
 
 function preventToolbarBlur(event: React.MouseEvent) {
   event.preventDefault();
-}
-
-function getSelectionRange(): Range | null {
-  const selection = window.getSelection();
-  if (!selection?.rangeCount) return null;
-  return selection.getRangeAt(0);
-}
-
-function restoreSelection(range: Range) {
-  const selection = window.getSelection();
-  if (!selection) return;
-  selection.removeAllRanges();
-  selection.addRange(range);
-}
-
-/** surroundContents 실패 시(여러 블록 선택 등) extractContents 로 감싸기 */
-function wrapRangeWithElement(range: Range, element: HTMLElement) {
-  try {
-    range.surroundContents(element);
-    return;
-  } catch {
-    const contents = range.extractContents();
-    element.appendChild(contents);
-    range.insertNode(element);
-  }
-
-  const wrapped = document.createRange();
-  wrapped.selectNodeContents(element);
-  restoreSelection(wrapped);
-}
-
-function saveSelectionInEditor(editor: HTMLElement | null, savedRange: { current: Range | null }) {
-  if (!editor) {
-    savedRange.current = null;
-    return;
-  }
-
-  const range = getSelectionRange();
-  if (!range || !editor.contains(range.commonAncestorContainer)) {
-    savedRange.current = null;
-    return;
-  }
-
-  savedRange.current = range.cloneRange();
-}
-
-function restoreSavedSelection(savedRange: { current: Range | null }, editor: HTMLElement) {
-  if (savedRange.current) {
-    restoreSelection(savedRange.current);
-    return;
-  }
-
-  const range = document.createRange();
-  range.selectNodeContents(editor);
-  range.collapse(false);
-  restoreSelection(range);
-}
-
-function applyStylesToElement(element: HTMLElement, styles: Record<string, string>) {
-  for (const [key, value] of Object.entries(styles)) {
-    const prop = key.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`);
-    element.style.setProperty(prop, value);
-  }
-}
-
-function wrapSelectionWithSpan(styles: Record<string, string>) {
-  const range = getSelectionRange();
-  if (!range) return;
-
-  const span = document.createElement("span");
-  applyStylesToElement(span, styles);
-
-  if (range.collapsed) {
-    span.appendChild(document.createTextNode("\u200B"));
-    range.insertNode(span);
-    const caret = document.createRange();
-    caret.setStart(span.firstChild!, 1);
-    caret.collapse(true);
-    restoreSelection(caret);
-    return;
-  }
-
-  wrapRangeWithElement(range, span);
-}
-
-function toggleInlineTag(tagName: "strong" | "em" | "s") {
-  const range = getSelectionRange();
-  if (!range || range.collapsed) return;
-  wrapRangeWithElement(range, document.createElement(tagName));
 }
 
 function normalizeLinkUrl(raw: string): string | null {
@@ -455,7 +377,10 @@ function FontSizePicker({ onBeforeOpen, onSelect }: FontSizePickerProps) {
             <li key={size.value} role="option" aria-selected={activeLabel === size.label}>
               <button
                 type="button"
-                onMouseDown={preventToolbarBlur}
+                onMouseDown={(event) => {
+                  preventToolbarBlur(event);
+                  onBeforeOpen();
+                }}
                 onClick={() => {
                   onSelect(size.value);
                   setActiveLabel(size.label);
@@ -532,32 +457,30 @@ export function PostRichTextEditor({
     (size: string) => {
       const editor = editorRef.current;
       if (!editor) return;
-
-      editor.focus();
-      restoreSavedSelection(savedRangeRef, editor);
-      wrapSelectionWithSpan({ fontSize: size });
-      onInput();
+      const applied = applyEditorFormat(editor, savedRangeRef, (range) => {
+        applyFontSizePx(editor, size, range);
+      });
+      if (applied) onInput();
     },
     [editorRef, onInput],
   );
 
   const handleFontSizePointerDown = useCallback(() => {
-    saveSelectionInEditor(editorRef.current, savedRangeRef);
+    saveEditorSelection(editorRef.current, savedRangeRef);
   }, [editorRef]);
 
   const saveSelection = useCallback(() => {
-    saveSelectionInEditor(editorRef.current, savedRangeRef);
+    saveEditorSelection(editorRef.current, savedRangeRef);
   }, [editorRef]);
 
   const applyColor = useCallback(
     (color: string) => {
       const editor = editorRef.current;
       if (!editor) return;
-
-      editor.focus();
-      restoreSavedSelection(savedRangeRef, editor);
-      wrapSelectionWithSpan({ color });
-      onInput();
+      const applied = applyEditorFormat(editor, savedRangeRef, () => {
+        runForeColor(color);
+      });
+      if (applied) onInput();
     },
     [editorRef, onInput],
   );
@@ -566,7 +489,7 @@ export function PostRichTextEditor({
     const editor = editorRef.current;
     if (!editor) return;
 
-    saveSelectionInEditor(editor, savedRangeRef);
+    saveEditorSelection(editor, savedRangeRef);
     const urlInput = window.prompt("링크 URL을 입력하세요 (https://...)");
     const url = urlInput ? normalizeLinkUrl(urlInput) : null;
     if (!url) {
@@ -577,7 +500,7 @@ export function PostRichTextEditor({
     }
 
     focusEditor();
-    restoreSavedSelection(savedRangeRef, editor);
+    prepareEditorSelection(editor, savedRangeRef);
     const range = getSelectionRange();
     if (!range) return;
 
@@ -603,29 +526,29 @@ export function PostRichTextEditor({
   const applyBold = useCallback(() => {
     const editor = editorRef.current;
     if (!editor) return;
-    focusEditor();
-    restoreSavedSelection(savedRangeRef, editor);
-    toggleInlineTag("strong");
-    onInput();
-  }, [editorRef, focusEditor, onInput]);
+    const applied = applyEditorFormat(editor, savedRangeRef, () => {
+      runFormatCommand("bold");
+    });
+    if (applied) onInput();
+  }, [editorRef, onInput]);
 
   const applyItalic = useCallback(() => {
     const editor = editorRef.current;
     if (!editor) return;
-    focusEditor();
-    restoreSavedSelection(savedRangeRef, editor);
-    toggleInlineTag("em");
-    onInput();
-  }, [editorRef, focusEditor, onInput]);
+    const applied = applyEditorFormat(editor, savedRangeRef, () => {
+      runFormatCommand("italic");
+    });
+    if (applied) onInput();
+  }, [editorRef, onInput]);
 
   const applyStrikethrough = useCallback(() => {
     const editor = editorRef.current;
     if (!editor) return;
-    focusEditor();
-    restoreSavedSelection(savedRangeRef, editor);
-    toggleInlineTag("s");
-    onInput();
-  }, [editorRef, focusEditor, onInput]);
+    const applied = applyEditorFormat(editor, savedRangeRef, () => {
+      runFormatCommand("strikeThrough");
+    });
+    if (applied) onInput();
+  }, [editorRef, onInput]);
 
   const handleEditorKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -657,7 +580,7 @@ export function PostRichTextEditor({
         return;
       }
       focusEditor();
-      restoreSavedSelection(savedRangeRef, editor);
+      prepareEditorSelection(editor, savedRangeRef);
       applyTextAlign(editor, align);
       onInput();
     },
@@ -670,7 +593,7 @@ export function PostRichTextEditor({
       if (!editor) return;
 
       focusEditor();
-      restoreSavedSelection(savedRangeRef, editor);
+      prepareEditorSelection(editor, savedRangeRef);
       const range = getSelectionRange();
 
       const image = document.createElement("img");
@@ -692,7 +615,7 @@ export function PostRichTextEditor({
       if (!editor) return null;
 
       focusEditor();
-      restoreSavedSelection(savedRangeRef, editor);
+      prepareEditorSelection(editor, savedRangeRef);
       const range = getSelectionRange();
 
       const video = document.createElement("video");
@@ -724,7 +647,7 @@ export function PostRichTextEditor({
     }
 
     focusEditor();
-    restoreSavedSelection(savedRangeRef, editor);
+    prepareEditorSelection(editor, savedRangeRef);
     const range = getSelectionRange();
 
     const iframe = document.createElement("iframe");

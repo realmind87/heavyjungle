@@ -46,8 +46,12 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
   - `general` — 일반게시글 (홈 피드)
   - `notice` — 공지사항 (홈 aside + `/notices` 게시판)
   - 일반 회원은 항상 일반게시글만 등록
-- **리치 텍스트 에디터** (서버 HTML sanitize)
-  - 굵게·기울임·취소선·링크·글자 크기·색상·정렬
+- **리치 텍스트 에디터** (서버 HTML sanitize, `src/lib/rich-text-editor-format.ts`)
+  - **서식 툴바** — 굵게·기울임·취소선(토글 해제 포함)·글자 크기·색상·링크·정렬
+  - 툴바 클릭 시 **선택 영역 유지** (`mousedown` 저장 → 포커스 복원 후 적용)
+  - **글자 크기** — 부분 선택·한 줄 전체·`Ctrl+A` 전체 선택 모두 지원 (블록/텍스트 단위)
+  - **색상** — `foreColor` 기반 적용
+  - 굵게·기울임·취소선 — `execCommand` + `styleWithCSS` (일반 WYSIWYG 패턴)
   - **이미지** 업로드 (JPEG/PNG/WebP/**GIF**, 최대 100MB) — 선택 후 X 삭제, 좌·가운데·우 정렬, **드래그 핸들 수동 리사이즈**
   - 발행 본문 — 에디터 정렬·인라인 `width` 스타일 보존 (`dangerouslySetInnerHTML`, `max-w-full`)
   - **동영상** 업로드 (MP4/WebM/MOV, 최대 1GB) — 진행률·취소, 커버 프레임 드래그 선택
@@ -281,7 +285,10 @@ src/
 │   └── admin/                # 관리자 액션, 감사 로그
 ├── server/                   # DB schema, auth, email, storage, rate-limit(Redis)
 ├── lib/
-└── db/migrations/            # 0013 email_change_tokens ... 0018 comment_likes
+│   ├── rich-text-editor-format.ts   # 에디터 서식(선택 복원·크기·색상·bold)
+│   ├── rich-text-editor-image.ts    # 이미지 삽입·리사이즈
+│   └── sanitize-post-html-core.ts   # 본문 HTML allowlist
+└── db/migrations/
 ```
 
 ---
@@ -309,6 +316,14 @@ npm run dev
 ```
 
 `predev`가 Docker(Postgres/Redis/MinIO)를 확인·기동합니다.
+
+캐시 초기화 후 재시작이 필요할 때:
+
+```bash
+rm -rf .next node_modules/.cache
+npm run docker:up
+npm run dev
+```
 
 | URL | 설명 |
 |-----|------|
@@ -551,6 +566,7 @@ Resend (이메일)
 
 - OAuth 소셜 로그인
 - 아이디 실시간 중복 확인 API
+- 외부 복사 붙여넣기 시 폰트·스타일 정리 (plain / smart paste)
 
 ---
 
