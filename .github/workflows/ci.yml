@@ -44,7 +44,15 @@ jobs:
         run: npm run test
 
       - name: Start services for E2E
-        run: docker compose up -d postgres redis minio && npm run db:migrate
+        run: |
+          docker compose up -d postgres redis minio
+          for i in $(seq 1 30); do
+            if docker compose exec -T postgres pg_isready -U postgres -d heavyjungle >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          npm run db:migrate
 
       - name: Install Playwright browser
         run: npx playwright install chromium --with-deps
