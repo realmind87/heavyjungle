@@ -20,6 +20,9 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
 
 - 회원가입 / 로그인 / 로그아웃 (Server Actions + httpOnly 세션 쿠키)
 - 헤더 로그인·회원가입 모달, `?next=` 리다이렉트 지원
+- **가입 후 프로필 설정 모달** — 표시 이름·소개·아바타 (선택, **나중에 하기** 시 기본 프로필 유지)
+- **회원가입 비밀번호** — 8자 이상·영문+숫자 포함 검증, 비밀번호 확인, 실시간 조건 체크리스트
+- **입력 안내 툴팁** — 아이디·비밀번호 라벨 옆 정보(ⓘ) 아이콘, 클릭 시 규칙 표시
 - **아이디 찾기** — 가입 이메일로 아이디 안내 메일 (`/login/find-username`)
   - 미등록 이메일이면 `"등록된 이메일이 아닙니다."` 오류 표시
 - **비밀번호 찾기** — 재설정 링크 메일 발송, 1시간 유효 토큰 (`/login/forgot-password` → `/reset-password`)
@@ -45,7 +48,8 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
   - 일반 회원은 항상 일반게시글만 등록
 - **리치 텍스트 에디터** (서버 HTML sanitize)
   - 굵게·기울임·취소선·링크·글자 크기·색상·정렬
-  - **이미지** 업로드 (JPEG/PNG/WebP/**GIF**, 최대 100MB) — 선택 후 X 삭제, 좌·가운데·우 정렬
+  - **이미지** 업로드 (JPEG/PNG/WebP/**GIF**, 최대 100MB) — 선택 후 X 삭제, 좌·가운데·우 정렬, **드래그 핸들 수동 리사이즈**
+  - 발행 본문 — 에디터 정렬·인라인 `width` 스타일 보존 (`dangerouslySetInnerHTML`, `max-w-full`)
   - **동영상** 업로드 (MP4/WebM/MOV, 최대 1GB) — 진행률·취소, 커버 프레임 드래그 선택
   - **YouTube** embed 삽입
   - 툴바 아이콘 버튼은 border 없는 플랫 스타일 (`크기` 드롭다운만 border 유지)
@@ -219,10 +223,11 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
 - Drizzle ORM 마이그레이션 (`follows`, `blocks`, `posts.category` 등)
 - `npm run dev` 시 로컬 DB 자동 기동 (`scripts/ensure-local-db.sh`)
 - NAS 배포: `scripts/nas-deploy.sh`, `scripts/nas-migrate.sh`, `scripts/nas-doctor.sh`
-- **GitHub Actions CI** (`.github/workflows/ci.yml`) — push/PR마다 lint + typecheck + **unit test**
-- **Vitest** — 권한·레이트리밋·미디어 URL 정책·메타데이터·신고 검증·**게시글 HTML sanitize**·**댓글 정렬**·**GIF 업로드** 등 (`npm run test`)
+- **GitHub Actions CI** (`.github/workflows/ci.yml`) — push/PR마다 lint + typecheck + unit test + **Playwright E2E**
+- **Vitest** — 권한·레이트리밋·미디어 URL 정책·메타데이터·신고 검증·게시글 HTML sanitize·댓글 정렬·GIF 업로드·**비밀번호 규칙** 등 (`npm run test`)
+- **Playwright E2E** — 로그인·글 작성·댓글·GIF 업로드 (`npm run test:e2e`, `npm run e2e:seed`)
 - **구조화 서버 로깅** (`src/lib/logger.ts`, `src/instrumentation.ts`) — 운영 RSC 오류를 `docker logs`에서 추적
-- NAS 수동 배포 워크플로 (`deploy-nas.yml`, `workflow_dispatch`)
+- **main push → NAS 자동 배포** (`.github/workflows/deploy-nas.yml`, GitHub Secrets 필요 — 아래 NAS 섹션)
 
 ---
 
@@ -355,11 +360,14 @@ npm run db:migrate   # 마이그레이션
 | `npm run lint` | ESLint |
 | `npm run test` | Vitest 단위 테스트 |
 | `npm run qa:smoke` | HTTP 스모크 + vitest (dev 서버 권장) |
-| `npm run test:e2e` | Playwright E2E smoke |
+| `npm run test:e2e` | Playwright E2E (로그인·글·댓글·GIF) |
+| `npm run e2e:seed` | E2E 테스트용 시드 사용자 생성 |
 | `npm run docker:up` / `docker:down` | 로컬 Docker |
 | `npm run db:migrate` | 마이그레이션 |
-| `npm run deploy:nas` | NAS 배포 |
-| `npm run docker:nas:cloudflare` | NAS + Cloudflare Tunnel |
+| `npm run deploy:nas` | NAS 배포 (NAS에서 실행) |
+| `npm run migrate:nas` | NAS DB 마이그레이션 |
+| `npm run doctor:nas` | NAS 진단 (DB·헬스체크) |
+| `npm run docker:nas:cloudflare` | NAS + Cloudflare Tunnel (로컬 테스트용 compose) |
 | `node scripts/create-admin-user.mjs <username>` | 관리자 생성 (로컬) |
 | `./scripts/nas-promote-admin.sh <username>` | NAS 관리자 승격 |
 
@@ -369,38 +377,68 @@ npm run db:migrate   # 마이그레이션
 
 Cloudflare Tunnel로 **[https://heavyjungle.com](https://heavyjungle.com)** 에 서비스합니다.
 
-### 최초 설정
+### 사전 요구사항
+
+| 항목 | 설명 |
+|------|------|
+| Synology DSM | Docker 패키지 설치 |
+| Git | SSH 또는 패키지 센터에서 설치 |
+| Cloudflare | Zero Trust Tunnel + `heavyjungle.com`, `s3.heavyjungle.com` hostname |
+| Resend | 도메인 인증 후 `RESEND_API_KEY`, `EMAIL_FROM` |
+| GitHub (선택) | `main` push 시 자동 배포용 Repository Secrets |
+
+권장 경로: `/volume1/docker/heavyjungle`
+
+### 최초 설정 (1회)
 
 ```bash
+# 1) 저장소 클론
 mkdir -p /volume1/docker
 cd /volume1/docker
 git clone https://github.com/realmind87/heavyjungle.git
 cd heavyjungle
 
+# 2) 환경 변수
 cp .env.nas.example .env
-# 아래 항목 설정 후 빌드·기동
+vi .env   # POSTGRES_PASSWORD, CLOUDFLARE_TUNNEL_TOKEN, RESEND 등 설정
+
+# 3) 빌드·기동 (Cloudflare Tunnel 포함)
+sudo docker compose -f docker-compose.nas.yml --profile cloudflare up -d --build
+
+# 4) DB 마이그레이션
+./scripts/nas-migrate.sh
+
+# 5) 관리자 승격 (이미 가입한 계정)
+./scripts/nas-promote-admin.sh <username>
+
+# 6) 상태 확인
+./scripts/nas-doctor.sh
+curl -s http://localhost:3000/api/health | head
 ```
 
 **NAS `.env` 필수 항목 예시:**
 
 ```env
-POSTGRES_PASSWORD=...
-CLOUDFLARE_TUNNEL_TOKEN=...
+POSTGRES_PASSWORD=강한-비밀번호
+MINIO_ROOT_PASSWORD=강한-비밀번호
+CLOUDFLARE_TUNNEL_TOKEN=eyJh...
 S3_PUBLIC_URL=https://s3.heavyjungle.com/uploads
 APP_URL=https://heavyjungle.com
 RESEND_API_KEY=re_...
 EMAIL_FROM="Heavy Jungle <noreply@heavyjungle.com>"
-ADMIN_USERNAMES=stansfield0125
+ADMIN_USERNAMES=your_admin_id
 ```
 
-```bash
-docker compose -f docker-compose.nas.yml --profile cloudflare up -d --build
-./scripts/nas-migrate.sh
-```
+**Cloudflare Tunnel Public Hostname (예시)**
+
+| Hostname | Service |
+|----------|---------|
+| `heavyjungle.com` | `http://app:3000` |
+| `s3.heavyjungle.com` | `http://minio:9000` |
 
 > `S3_PUBLIC_URL`은 Docker **빌드 시** `NEXT_PUBLIC_S3_PUBLIC_URL`에도 박힙니다. 값 변경 후 반드시 `--build`로 재배포하세요.
 
-### 업데이트 배포
+### 업데이트 배포 (수동)
 
 ```bash
 cd /volume1/docker/heavyjungle
@@ -408,13 +446,39 @@ git pull origin main
 ./scripts/nas-deploy.sh
 ```
 
-배포 스크립트가 마이그레이션(`follows`, `blocks`, `post_category` 등)을 적용합니다.
+`nas-deploy.sh`는 `git pull` → `docker compose up -d --build` → `nas-migrate.sh` → 헬스체크까지 수행합니다.
 
-### 운영 관리자
+### GitHub Actions 자동 배포 설정
+
+`main` 브랜치 push 시 NAS에 SSH로 `nas-deploy.sh`를 실행합니다.  
+저장소 **Settings → Secrets and variables → Actions** 에 아래를 등록하세요.
+
+| Secret | 설명 | 예시 |
+|--------|------|------|
+| `NAS_HOST` | NAS IP 또는 DDNS 호스트 | `192.168.0.10` |
+| `NAS_USER` | SSH 사용자 | `admin` |
+| `NAS_SSH_KEY` | SSH 개인키 (PEM 전체) | `-----BEGIN OPENSSH PRIVATE KEY-----...` |
+| `NAS_PORT` | SSH 포트 (선택) | `22` |
+| `NAS_DEPLOY_PATH` | 배포 경로 (선택) | `/volume1/docker/heavyjungle` |
+
+Secrets가 없으면 워크플로는 **건너뛰고** CI만 실행됩니다.  
+수동 실행: GitHub **Actions → Deploy to NAS → Run workflow**.
+
+**Synology SSH 준비**
+
+1. 제어판 → 터미널 및 SNMP → SSH 활성화
+2. 사용자 계정에 `docker` 그룹 권한 (또는 `sudo` 없이 docker 실행 가능하도록 설정)
+3. `nas-deploy.sh`는 `sudo docker compose`를 사용 — 배포 계정에 passwordless sudo 또는 docker 권한 필요
+
+### 운영 관리
 
 ```bash
-./scripts/nas-migrate.sh
-./scripts/nas-promote-admin.sh <username>
+./scripts/nas-doctor.sh              # DB·테이블·헬스 진단
+./scripts/nas-migrate.sh             # 마이그레이션만
+./scripts/nas-migrate-repair.sh      # 마이그레이션 꼬였을 때 (주의)
+./scripts/nas-promote-admin.sh <id>  # 관리자 승격
+sudo docker compose -f docker-compose.nas.yml logs -f app   # 앱 로그
+./scripts/nas-promote-admin.sh <id>  # 관리자 승격
 ```
 
 ---
@@ -485,9 +549,8 @@ Resend (이메일)
 
 ## 향후 예정
 
-- ~~Redis 세션 미러~~ → `session-cache.ts` (fail-open, sliding renewal 연동)
-- GitHub Actions **main push → NAS 자동 배포** (`deploy-nas.yml`, NAS SSH secrets 필요)
-- E2E 확장 (로그인·글 작성·댓글 플로우)
+- OAuth 소셜 로그인
+- 아이디 실시간 중복 확인 API
 
 ---
 
