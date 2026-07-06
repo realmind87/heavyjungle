@@ -447,6 +447,7 @@ npm run db:migrate   # 마이그레이션
 | `npm run doctor:nas` | NAS 진단 (DB·헬스체크) |
 | `npm run docker:nas:cloudflare` | NAS + Cloudflare Tunnel (로컬 테스트용 compose) |
 | `node scripts/create-admin-user.mjs <username>` | 관리자 생성 (로컬) |
+| `node scripts/fix-legacy-brand-in-content.mjs` | DB 콘텐츠 구 브랜드명(배포는기도다) 치환 |
 | `./scripts/nas-promote-admin.sh <username>` | NAS 관리자 승격 |
 
 ---
