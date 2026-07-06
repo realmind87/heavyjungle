@@ -18,18 +18,18 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
 
 ### 인증 · 계정
 
-- 회원가입 / 로그인 / 로그아웃 (Server Actions + httpOnly 세션 쿠키)
+- **회원가입** — 가입 완료 후 **이메일 인증 필수** (인증 전 로그인 불가, 자동 로그인 없음)
 - 헤더 로그인·회원가입 모달, `?next=` 리다이렉트 지원
 - **가입 후 프로필 설정 모달** — 표시 이름·소개·아바타 (선택, **나중에 하기** 시 기본 프로필 유지)
 - **회원가입 비밀번호** — 8자 이상·영문+숫자 포함 검증, 비밀번호 확인, 실시간 조건 체크리스트
 - **입력 안내 툴팁** — 아이디·비밀번호 라벨 옆 정보(ⓘ) 아이콘, 클릭 시 규칙 표시
 - **아이디 찾기** — 가입 이메일로 아이디 안내 메일 (`/login/find-username`)
-  - 미등록 이메일이면 `"등록된 이메일이 아닙니다."` 오류 표시
+  - 등록 여부와 관계없이 동일 응답 (계정 열거 방지)
 - **비밀번호 찾기** — 재설정 링크 메일 발송, 1시간 유효 토큰 (`/login/forgot-password` → `/reset-password`)
-  - 미등록 이메일 / 소셜 로그인 등 비밀번호 없는 계정 각각 안내 메시지 구분
+  - 등록 여부·비밀번호 유무와 관계없이 동일 응답 (계정 열거 방지)
 - **이메일 변경 인증** — 새 이메일로 확인 링크 발송 → `/confirm-email-change?token=` 확인 후 반영
   - `email_change_tokens` 테이블(해시 저장, 만료 시간)
-- 프로필 비밀번호·이메일 변경 (`/u/[username]/settings/...`)
+- 프로필 비밀번호·이메일·**보안 설정** (`/u/[username]/settings/...`)
 - **관리자 권한** — `users.role` (`user` \| `admin`) + `ADMIN_USERNAMES` 환경 변수 병행
 - 관리자 계정 생성·승격 스크립트 (`scripts/create-admin-user.mjs`, `scripts/nas-promote-admin.sh`)
 - **레이트 리미팅** (Redis 고정 윈도우, 장애 시 fail-open)
@@ -267,7 +267,7 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
 | Database | PostgreSQL 16 |
 | Cache | Redis 7 |
 | Storage | MinIO (S3 호환, AWS SDK presigned URL) |
-| Auth | Argon2id, 자체 세션 (DB + httpOnly 쿠키) |
+| Auth | Argon2id, 자체 세션, 이메일 인증, TOTP 2FA (`otplib`) |
 | Validation | Zod v4 |
 | Client State | TanStack Query |
 | Charts | Recharts (관리자 대시보드) |
@@ -350,7 +350,16 @@ npm run docker:up
 npm run dev
 ```
 
-> **주의:** `package-lock.json`을 Docker Alpine(`node:20-alpine`)에서 갱신한 뒤에는 로컬 macOS에서 `npm ci`를 한 번 더 실행하세요. Alpine용 `node_modules`가 남으면 `lightningcss` 등 네이티브 모듈 오류가 날 수 있습니다.
+> **주의 (lockfile / node_modules):**
+> - macOS에서 `npm install`로 의존성을 추가·갱신한 뒤 **커밋 전**에는 Docker와 동일한 lockfile을 맞추세요.
+>   ```bash
+>   docker run --rm -v "$PWD":/app -w /app node:20-alpine npm install
+>   ```
+> - Alpine에서 lockfile을 갱신한 뒤 로컬 개발 시에는 macOS용 `node_modules`를 다시 설치하세요.
+>   ```bash
+>   rm -rf node_modules && npm ci
+>   ```
+> - Alpine용 `node_modules`가 남으면 `lightningcss` 등 네이티브 모듈 오류가 날 수 있습니다.
 
 | URL | 설명 |
 |-----|------|
@@ -381,6 +390,8 @@ npm run db:migrate   # 마이그레이션
 | `/login` | 로그인 |
 | `/login/find-username` | 아이디 찾기 |
 | `/login/forgot-password` | 비밀번호 찾기 |
+| `/login/resend-verification` | 가입 인증 메일 재발송 |
+| `/verify-email?token=` | 가입 이메일 인증 확인 |
 | `/reset-password?token=` | 비밀번호 재설정 |
 | `/signup` | 회원가입 |
 | `/admin` | 관리자 모더레이션 |
@@ -390,6 +401,9 @@ npm run db:migrate   # 마이그레이션
 | `/u/[username]/followers` | 팔로워 (모달/풀페이지) |
 | `/u/[username]/following` | 팔로잉 (모달/풀페이지) |
 | `/u/[username]/edit` | 프로필 수정 |
+| `/u/[username]/settings/password` | 비밀번호 변경 |
+| `/u/[username]/settings/email` | 이메일 변경 |
+| `/u/[username]/settings/security` | 보안 설정 (세션·TOTP 2FA) |
 | `/confirm-email-change?token=` | 이메일 변경 인증 확인 |
 | `/search?q=&type=` | 검색 전체 결과 (게시글/사용자) |
 
@@ -493,11 +507,11 @@ git pull origin main
 
 `nas-deploy.sh`는 `git pull` → `docker compose up -d --build` → `nas-migrate.sh` → 헬스체크까지 수행합니다.
 
-**Docker `npm ci` 실패 시** — lockfile이 macOS npm과 어긋난 경우 Alpine에서 재생성:
+**Docker `npm ci` 실패 시** (`Missing: esbuild@0.28.1` 등) — lockfile이 macOS npm 11과 Linux npm 10에서 어긋난 경우입니다. 프로젝트 루트에서 Alpine으로 재생성:
 
 ```bash
 docker run --rm -v "$PWD":/app -w /app node:20-alpine npm install
-git add package-lock.json && git commit -m "Fix package-lock for Linux npm ci"
+git add package-lock.json && git commit -m "Fix package-lock for Linux Docker npm ci"
 ```
 
 이후 NAS에서 `git pull` + `./scripts/nas-deploy.sh`로 재배포합니다.
@@ -640,18 +654,9 @@ Resend (이메일)
 - [x] 추적 스크립트 연결 (`NEXT_PUBLIC_UMAMI_*`)
 - [x] 관리자 운영 대시보드 (`/admin/dashboard`) — KPI·추이·콘텐츠·사용자·운영·방문자 **탭 UI**
 - [x] Admin 대시보드 Umami 연동 (로그인 방식 API — 셀프호스팅용)
-- [x] Docker `npm ci` lockfile 수정 (recharts 이후 NAS 빌드)
+- [x] **계정 보안 5종** — 이메일 인증, 계정 열거 방지, HIBP 유출 비밀번호 차단, 로그인 알림·세션 관리, TOTP 2FA
+- [x] Docker `npm ci` lockfile 수정 (recharts·otplib 이후 NAS 빌드)
 - [x] 502 원인 수정 (`env.ts` 빈 문자열 검증 이슈)
-
-### 남은 할 일 — 계정 보안 5종
-
-- [x] **1. 가입 시 이메일 인증** — `emailVerifiedAt` + verification 토큰
-- [x] **2. 계정 열거 방지** — find-username·reset 응답 통일
-- [x] **3. 유출 비밀번호 차단** — Have I Been Pwned k-anonymity
-- [x] **4. 로그인/새 기기 알림 메일** + 활성 세션 목록 (`/u/[username]/settings/security`)
-- [x] **5. TOTP 2단계 인증** — 로그인 2단계 + 보안 설정에서 on/off
-
-> 소셜 로그인(OAuth)은 추후 별도 진행 (`users.password_hash`는 이미 nullable)
 
 ### 남은 할 일 — 보안 마무리 (운영 확인)
 
