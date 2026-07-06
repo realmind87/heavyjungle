@@ -7,6 +7,21 @@ import { z } from "zod";
 
 config();
 
+/** Docker Compose `${VAR:-}` passes "" when unset — treat as missing for optional fields */
+function optionalNonEmptyString() {
+  return z.preprocess(
+    (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+    z.string().min(1).optional(),
+  );
+}
+
+function optionalUrl() {
+  return z.preprocess(
+    (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+    z.string().url().optional(),
+  );
+}
+
 const envSchema = z.object({
   DATABASE_URL: z.url(),
   REDIS_URL: z.string().min(1),
@@ -26,8 +41,8 @@ const envSchema = z.object({
   /** 비밀번호 재설정 링크 등 절대 URL 생성용 */
   APP_URL: z.string().url().default("http://localhost:3000"),
   /** Resend API — 없으면 development에서 콘솔로 출력 */
-  RESEND_API_KEY: z.string().min(1).optional(),
-  EMAIL_FROM: z.string().min(1).optional(),
+  RESEND_API_KEY: optionalNonEmptyString(),
+  EMAIL_FROM: optionalNonEmptyString(),
   /** 관리자 아이디 (쉼표 구분) — DB role과 병행 */
   ADMIN_USERNAMES: z
     .string()
@@ -37,9 +52,9 @@ const envSchema = z.object({
       return value.split(",").map((item) => item.trim()).filter(Boolean);
     }),
   /** Umami 통계 API (서버 전용, 선택) */
-  UMAMI_API_URL: z.string().url().optional(),
-  UMAMI_API_TOKEN: z.string().min(1).optional(),
-  UMAMI_WEBSITE_ID: z.string().min(1).optional(),
+  UMAMI_API_URL: optionalUrl(),
+  UMAMI_API_TOKEN: optionalNonEmptyString(),
+  UMAMI_WEBSITE_ID: optionalNonEmptyString(),
 });
 
 export type Env = z.infer<typeof envSchema>;
