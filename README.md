@@ -176,12 +176,12 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
 
 - 관리자 전용 (로그인 + `role=admin` 또는 `ADMIN_USERNAMES`)
 - **모더레이션 패널** (`/admin`) — 탭: 최신 글 / 최신 댓글 / 사용자 / 신고 / 감사 로그
-- **운영 대시보드** (`/admin/dashboard`) — Recharts 기반 분석 UI
-  - **KPI** — 회원·글·댓글 수 + 오늘/이번 주 증감, 미처리 신고
-  - **30일 추이** — 가입·글·댓글·활동 유저(근사치)
-  - **콘텐츠** — 인기 글 TOP 10, 분류 분포, 글당 평균 댓글·좋아요
-  - **사용자** — 활발한 작성자 TOP 10, 글 미작성 비율, 팔로우 통계
-  - **운영** — 신고 사유/상태, 평균 처리 시간, 삭제 처리 비율, 감사 로그 요약
+- **운영 대시보드** (`/admin/dashboard`) — Recharts 기반 분석 UI, **영역별 탭**
+  - **개요** — 운영 KPI(회원·글·댓글·미처리 신고), 커뮤니티 30일 추이(가입·글·댓글·활동 유저)
+  - **콘텐츠** — 게시글 분류 분포, 글당 평균 댓글·좋아요, 조회수 TOP 10
+  - **사용자** — 회원·팔로우 지표, 글 미작성 비율, 활발한 작성자 TOP 10
+  - **운영** — 신고 사유/상태, 처리 시간·삭제 비율, 감사 로그 (미처리 신고 탭 뱃지)
+  - **방문자** — Umami UV·PV·인기 페이지·유입·기기 (미설정 시 안내 문구)
   - 집계: `src/features/admin/analytics.ts` (Drizzle + Redis 5분 캐시)
 - 글·댓글 삭제, 사용자 role 변경 (`user` ↔ `admin`), 신고 해결/기각
 - 헤더 프로필 메뉴에 관리자 링크 (관리자만)
@@ -191,8 +191,10 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
 
 - **셀프호스팅 Umami** — `docker-compose.nas.yml`의 `umami` + `umami-db` (운영 DB와 분리)
 - **추적 스크립트** — `layout.tsx`에 `UmamiScript` (`NEXT_PUBLIC_UMAMI_*`, 미설정 시 미삽입)
-- **관리자 대시보드 연동** — `src/server/analytics/umami.ts` (서버 API 토큰만 사용)
-  - UV·PV·유입 경로·인기 페이지·기기 분포 (API 장애 시 해당 섹션만 폴백)
+- **관리자 대시보드 연동** — `src/server/analytics/umami.ts` (서버 전용)
+  - **셀프호스팅(v3)** — `UMAMI_USERNAME` / `UMAMI_PASSWORD`로 `/api/auth/login` → Bearer 토큰 (Redis 60분 캐시, 401 시 재로그인)
+  - **Umami Cloud 등** — `UMAMI_API_TOKEN` 정적 토큰 하위 호환
+  - UV·PV·유입 경로·인기 페이지·기기 분포 (API 장애 시 해당 탭만 폴백)
 - **개인정보** — `/privacy`에 방문 통계 수집 고지
 
 ### UI · 브랜딩
@@ -342,6 +344,8 @@ npm run docker:up
 npm run dev
 ```
 
+> **주의:** `package-lock.json`을 Docker Alpine(`node:20-alpine`)에서 갱신한 뒤에는 로컬 macOS에서 `npm ci`를 한 번 더 실행하세요. Alpine용 `node_modules`가 남으면 `lightningcss` 등 네이티브 모듈 오류가 날 수 있습니다.
+
 | URL | 설명 |
 |-----|------|
 | http://localhost:3000 | 홈 |
@@ -483,6 +487,15 @@ git pull origin main
 
 `nas-deploy.sh`는 `git pull` → `docker compose up -d --build` → `nas-migrate.sh` → 헬스체크까지 수행합니다.
 
+**Docker `npm ci` 실패 시** — lockfile이 macOS npm과 어긋난 경우 Alpine에서 재생성:
+
+```bash
+docker run --rm -v "$PWD":/app -w /app node:20-alpine npm install
+git add package-lock.json && git commit -m "Fix package-lock for Linux npm ci"
+```
+
+이후 NAS에서 `git pull` + `./scripts/nas-deploy.sh`로 재배포합니다.
+
 ### GitHub Actions 자동 배포 설정
 
 `main` 브랜치 push 시 NAS에 SSH로 `nas-deploy.sh`를 실행합니다.  
@@ -534,20 +547,34 @@ sudo docker compose -f docker-compose.nas.yml logs -f umami  # Umami 로그
 | `NEXT_PUBLIC_UMAMI_SRC` | Umami 스크립트 베이스 URL (빌드 시 주입) |
 | `NEXT_PUBLIC_UMAMI_WEBSITE_ID` | Umami 웹사이트 ID (브라우저 추적) |
 | `UMAMI_API_URL` | Umami API URL (서버, Docker 내부 `http://umami:3000` 권장) |
-| `UMAMI_API_TOKEN` | Umami API 토큰 (서버 전용) |
 | `UMAMI_WEBSITE_ID` | Umami 웹사이트 ID (대시보드 API) |
+| `UMAMI_USERNAME` | Umami 관리자 아이디 (셀프호스팅 로그인, 서버 전용) |
+| `UMAMI_PASSWORD` | Umami 관리자 비밀번호 (서버 전용, `NEXT_PUBLIC` 금지) |
+| `UMAMI_API_TOKEN` | Umami Cloud 정적 API 토큰 (선택, 셀프호스팅은 비워둠) |
 | `UMAMI_DB_PASSWORD` | Umami 전용 Postgres 비밀번호 (NAS compose) |
 | `UMAMI_APP_SECRET` | Umami 앱 시크릿 (NAS compose) |
 
-로컬은 `.env.example`, NAS는 `.env.nas.example` 참고.
+로컬은 `.env.example`, NAS는 `.env.nas.example` 참고. Docker Compose는 미설정 Umami 변수를 빈 문자열로 주입하므로, 앱은 빈 값을 “미설정”으로 처리합니다.
 
 ### Umami 설정 (NAS)
 
 1. `.env`에 `UMAMI_DB_PASSWORD`, `UMAMI_APP_SECRET` 설정
 2. `docker compose -f docker-compose.nas.yml up -d umami-db umami`
 3. Cloudflare Tunnel에 `analytics.heavyjungle.com` → `http://umami:3000` 추가
-4. Umami UI에서 웹사이트·API 토큰 생성
-5. `.env`에 `NEXT_PUBLIC_UMAMI_*`, `UMAMI_API_*` 입력 후 **`--build` 재배포**
+4. Umami UI에서 관리자 계정·웹사이트 생성 → **웹사이트 ID** 확인
+5. `.env` 예시 (셀프호스팅):
+
+```env
+NEXT_PUBLIC_UMAMI_SRC=https://analytics.heavyjungle.com
+NEXT_PUBLIC_UMAMI_WEBSITE_ID=<website-uuid>
+UMAMI_API_URL=http://umami:3000
+UMAMI_WEBSITE_ID=<website-uuid>
+UMAMI_USERNAME=admin
+UMAMI_PASSWORD=<umami-admin-password>
+# UMAMI_API_TOKEN=   ← 셀프호스팅은 비워둠
+```
+
+6. **`--build` 재배포** (`NEXT_PUBLIC_*`는 빌드 시 주입)
 
 Umami 미설정 시에도 자체 운영 대시보드(`/admin/dashboard`)는 정상 동작합니다.
 
