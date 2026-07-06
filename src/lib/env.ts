@@ -53,8 +53,11 @@ const envSchema = z.object({
     }),
   /** Umami 통계 API (서버 전용, 선택) */
   UMAMI_API_URL: optionalUrl(),
+  /** Umami Cloud 등 정적 API 키 — 셀프호스팅은 비워두고 로그인 방식 사용 */
   UMAMI_API_TOKEN: optionalNonEmptyString(),
   UMAMI_WEBSITE_ID: optionalNonEmptyString(),
+  UMAMI_USERNAME: optionalNonEmptyString(),
+  UMAMI_PASSWORD: optionalNonEmptyString(),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -79,15 +82,30 @@ export const env = loadEnv();
 /** 서버 대시보드 Umami API — UMAMI_* 없으면 null */
 export function getUmamiServerConfig(): {
   apiUrl: string;
-  apiToken: string;
   websiteId: string;
+  apiToken?: string;
+  username?: string;
+  password?: string;
 } | null {
-  const { UMAMI_API_URL, UMAMI_API_TOKEN, UMAMI_WEBSITE_ID } = env;
-  if (!UMAMI_API_URL || !UMAMI_API_TOKEN || !UMAMI_WEBSITE_ID) return null;
+  const {
+    UMAMI_API_URL,
+    UMAMI_API_TOKEN,
+    UMAMI_WEBSITE_ID,
+    UMAMI_USERNAME,
+    UMAMI_PASSWORD,
+  } = env;
+
+  if (!UMAMI_API_URL || !UMAMI_WEBSITE_ID) return null;
+
+  const hasLogin = Boolean(UMAMI_USERNAME && UMAMI_PASSWORD);
+  const hasToken = Boolean(UMAMI_API_TOKEN);
+
+  if (!hasLogin && !hasToken) return null;
 
   return {
     apiUrl: UMAMI_API_URL.replace(/\/$/, ""),
-    apiToken: UMAMI_API_TOKEN,
     websiteId: UMAMI_WEBSITE_ID,
+    ...(UMAMI_API_TOKEN ? { apiToken: UMAMI_API_TOKEN } : {}),
+    ...(hasLogin ? { username: UMAMI_USERNAME, password: UMAMI_PASSWORD } : {}),
   };
 }

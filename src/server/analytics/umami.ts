@@ -1,13 +1,16 @@
 /**
- * Umami 통계 API — 서버 전용, 토큰은 env에만 보관.
+ * Umami 통계 API — 서버 전용, 인증 정보는 env에만 보관.
  */
 import "server-only";
 
 import type { UmamiAnalyticsSection, UmamiDashboardStats, UmamiMetricRow } from "@/features/admin/analytics-types";
-import { cacheGet, cacheKey, cacheSet } from "@/lib/cache";
+import { cacheDel, cacheGet, cacheKey, cacheSet } from "@/lib/cache";
 import { getUmamiServerConfig } from "@/lib/env";
 
 const UMAMI_CACHE_TTL_SECONDS = 600;
+const UMAMI_TOKEN_CACHE_TTL_SECONDS = 60 * 60;
+
+type UmamiServerConfig = NonNullable<ReturnType<typeof getUmamiServerConfig>>;
 
 type UmamiStatsResponse = {
   pageviews?: { value?: number };
@@ -19,24 +22,80 @@ type UmamiStatsResponse = {
 
 type UmamiMetricsResponse = Array<{ x: string; y: number }>;
 
+function umamiTokenCacheKey(config: UmamiServerConfig): string {
+  const suffix = config.username ?? "static-token";
+  return cacheKey("umami", "auth", suffix);
+}
+
 function rangeLast30Days(): { startAt: number; endAt: number } {
   const endAt = Date.now();
   const startAt = endAt - 30 * 24 * 60 * 60 * 1000;
   return { startAt, endAt };
 }
 
+async function loginUmami(config: UmamiServerConfig): Promise<string | null> {
+  if (!config.username || !config.password) return null;
+
+  try {
+    const response = await fetch(`${config.apiUrl}/api/auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        username: config.username,
+        password: config.password,
+      }),
+      cache: "no-store",
+    });
+
+    if (!response.ok) return null;
+
+    const data = (await response.json()) as { token?: string };
+    if (!data.token) return null;
+
+    await cacheSet(umamiTokenCacheKey(config), data.token, UMAMI_TOKEN_CACHE_TTL_SECONDS);
+    return data.token;
+  } catch {
+    return null;
+  }
+}
+
+async function getUmamiToken(config: UmamiServerConfig): Promise<string | null> {
+  if (config.apiToken) return config.apiToken;
+
+  const cached = await cacheGet<string>(umamiTokenCacheKey(config));
+  if (cached) return cached;
+
+  return loginUmami(config);
+}
+
 async function umamiFetch<T>(path: string): Promise<T | null> {
   const config = getUmamiServerConfig();
   if (!config) return null;
 
-  try {
-    const response = await fetch(`${config.apiUrl}${path}`, {
+  const doFetch = (token: string) =>
+    fetch(`${config.apiUrl}${path}`, {
       headers: {
-        Authorization: `Bearer ${config.apiToken}`,
+        Authorization: `Bearer ${token}`,
         Accept: "application/json",
       },
       cache: "no-store",
     });
+
+  let token = await getUmamiToken(config);
+  if (!token) return null;
+
+  try {
+    let response = await doFetch(token);
+
+    if (response.status === 401 && !config.apiToken) {
+      await cacheDel(umamiTokenCacheKey(config));
+      token = await loginUmami(config);
+      if (!token) return null;
+      response = await doFetch(token);
+    }
 
     if (!response.ok) return null;
     return (await response.json()) as T;
