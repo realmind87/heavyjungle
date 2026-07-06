@@ -36,7 +36,10 @@ export default async function AdminPage() {
         </Link>
         <h1 className={`mt-4 ${pageTitleClass}`}>관리자</h1>
         <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-          글·댓글 삭제 및 사용자 권한을 관리합니다.
+          글·댓글 삭제 및 사용자 권한을 관리합니다.{" "}
+          <Link href="/admin/dashboard" className="text-zinc-900 underline dark:text-zinc-100">
+            운영 대시보드
+          </Link>
         </p>
         <div className="mt-8">
           <AdminPanel

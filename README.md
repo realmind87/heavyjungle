@@ -175,11 +175,25 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
 ### 관리자 (`/admin`)
 
 - 관리자 전용 (로그인 + `role=admin` 또는 `ADMIN_USERNAMES`)
-- 탭: **최신 글** / **최신 댓글** / **사용자** / **신고** / **감사 로그**
+- **모더레이션 패널** (`/admin`) — 탭: 최신 글 / 최신 댓글 / 사용자 / 신고 / 감사 로그
+- **운영 대시보드** (`/admin/dashboard`) — Recharts 기반 분석 UI
+  - **KPI** — 회원·글·댓글 수 + 오늘/이번 주 증감, 미처리 신고
+  - **30일 추이** — 가입·글·댓글·활동 유저(근사치)
+  - **콘텐츠** — 인기 글 TOP 10, 분류 분포, 글당 평균 댓글·좋아요
+  - **사용자** — 활발한 작성자 TOP 10, 글 미작성 비율, 팔로우 통계
+  - **운영** — 신고 사유/상태, 평균 처리 시간, 삭제 처리 비율, 감사 로그 요약
+  - 집계: `src/features/admin/analytics.ts` (Drizzle + Redis 5분 캐시)
 - 글·댓글 삭제, 사용자 role 변경 (`user` ↔ `admin`), 신고 해결/기각
 - 헤더 프로필 메뉴에 관리자 링크 (관리자만)
 - **감사 로그** — 공지 등록/수정, 글·댓글 삭제, role 변경, 신고 해결/기각 등 관리자 행위 기록
-  - 행위자·대상·메타데이터·시각 표시
+
+### 방문자 분석 (Umami, 선택)
+
+- **셀프호스팅 Umami** — `docker-compose.nas.yml`의 `umami` + `umami-db` (운영 DB와 분리)
+- **추적 스크립트** — `layout.tsx`에 `UmamiScript` (`NEXT_PUBLIC_UMAMI_*`, 미설정 시 미삽입)
+- **관리자 대시보드 연동** — `src/server/analytics/umami.ts` (서버 API 토큰만 사용)
+  - UV·PV·유입 경로·인기 페이지·기기 분포 (API 장애 시 해당 섹션만 폴백)
+- **개인정보** — `/privacy`에 방문 통계 수집 고지
 
 ### UI · 브랜딩
 
@@ -228,8 +242,8 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
 - `npm run dev` 시 로컬 DB 자동 기동 (`scripts/ensure-local-db.sh`)
 - NAS 배포: `scripts/nas-deploy.sh`, `scripts/nas-migrate.sh`, `scripts/nas-doctor.sh`
 - **GitHub Actions CI** (`.github/workflows/ci.yml`) — push/PR마다 lint + typecheck + unit test + **Playwright E2E**
-- **Vitest** — 권한·레이트리밋·미디어 URL 정책·메타데이터·신고 검증·게시글 HTML sanitize·댓글 정렬·GIF 업로드·**비밀번호 규칙** 등 (`npm run test`)
-- **Playwright E2E** — 로그인·글 작성·댓글·GIF 업로드 (`npm run test:e2e`, `npm run e2e:seed`)
+- **Vitest** — 권한·레이트리밋·미디어 URL 정책·메타데이터·신고 검증·게시글 HTML sanitize·댓글 정렬·GIF 업로드·비밀번호 규칙·**관리자 analytics 유틸** 등 (`npm run test`)
+- **Playwright E2E** — 로그인·글·댓글·GIF·**관리자 대시보드 접근 제어** (`npm run test:e2e`, `npm run e2e:seed`)
 - **구조화 서버 로깅** (`src/lib/logger.ts`, `src/instrumentation.ts`) — 운영 RSC 오류를 `docker logs`에서 추적
 - **main push → NAS 자동 배포** (`.github/workflows/deploy-nas.yml`, GitHub Secrets 필요 — 아래 NAS 섹션)
 
@@ -248,6 +262,8 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
 | Auth | Argon2id, 자체 세션 (DB + httpOnly 쿠키) |
 | Validation | Zod v4 |
 | Client State | TanStack Query |
+| Charts | Recharts (관리자 대시보드) |
+| Analytics | Umami (셀프호스팅, 선택) |
 | Email | Resend API |
 | Infra | Docker Compose, Cloudflare Tunnel |
 
@@ -282,12 +298,13 @@ src/
 │   ├── uploads/
 │   ├── notifications/        # 알림 조회·생성·벨 UI
 │   ├── reports/              # 신고 액션·관리자 처리·UI
-│   └── admin/                # 관리자 액션, 감사 로그
-├── server/                   # DB schema, auth, email, storage, rate-limit(Redis)
+│   └── admin/                # 관리자 액션, 감사 로그, analytics 집계
+├── server/
+│   └── analytics/            # Umami API 클라이언트
 ├── lib/
-│   ├── rich-text-editor-format.ts   # 에디터 서식(선택 복원·크기·색상·bold)
-│   ├── rich-text-editor-image.ts    # 이미지 삽입·리사이즈
-│   └── sanitize-post-html-core.ts   # 본문 HTML allowlist
+│   ├── rich-text-editor-format.ts
+│   ├── umami-env.ts          # NEXT_PUBLIC Umami 설정
+│   └── sanitize-post-html-core.ts
 └── db/migrations/
 ```
 
@@ -331,7 +348,8 @@ npm run dev
 | http://localhost:3000/write | 글 작성 |
 | http://localhost:3000/notices | 공지사항 |
 | http://localhost:3000/login | 로그인 |
-| http://localhost:3000/admin | 관리자 |
+| http://localhost:3000/admin | 관리자 모더레이션 |
+| http://localhost:3000/admin/dashboard | 관리자 운영 대시보드 |
 | http://localhost:9001 | MinIO 콘솔 (minioadmin / minioadmin) |
 
 ```bash
@@ -355,7 +373,9 @@ npm run db:migrate   # 마이그레이션
 | `/login/forgot-password` | 비밀번호 찾기 |
 | `/reset-password?token=` | 비밀번호 재설정 |
 | `/signup` | 회원가입 |
-| `/admin` | 관리자 |
+| `/admin` | 관리자 모더레이션 |
+| `/admin/dashboard` | 관리자 운영 대시보드 (Recharts) |
+| `/privacy` | 개인정보처리방침 (Umami 고지) |
 | `/u/[username]` | 프로필 |
 | `/u/[username]/followers` | 팔로워 (모달/풀페이지) |
 | `/u/[username]/following` | 팔로잉 (모달/풀페이지) |
@@ -493,7 +513,7 @@ Secrets가 없으면 워크플로는 **건너뛰고** CI만 실행됩니다.
 ./scripts/nas-migrate-repair.sh      # 마이그레이션 꼬였을 때 (주의)
 ./scripts/nas-promote-admin.sh <id>  # 관리자 승격
 sudo docker compose -f docker-compose.nas.yml logs -f app   # 앱 로그
-./scripts/nas-promote-admin.sh <id>  # 관리자 승격
+sudo docker compose -f docker-compose.nas.yml logs -f umami  # Umami 로그
 ```
 
 ---
@@ -511,8 +531,25 @@ sudo docker compose -f docker-compose.nas.yml logs -f app   # 앱 로그
 | `RESEND_API_KEY` | Resend API 키 (운영 필수) |
 | `EMAIL_FROM` | 발신 주소 (공백·`<>` 있으면 따옴표) |
 | `ADMIN_USERNAMES` | 관리자 아이디 (쉼표 구분) |
+| `NEXT_PUBLIC_UMAMI_SRC` | Umami 스크립트 베이스 URL (빌드 시 주입) |
+| `NEXT_PUBLIC_UMAMI_WEBSITE_ID` | Umami 웹사이트 ID (브라우저 추적) |
+| `UMAMI_API_URL` | Umami API URL (서버, Docker 내부 `http://umami:3000` 권장) |
+| `UMAMI_API_TOKEN` | Umami API 토큰 (서버 전용) |
+| `UMAMI_WEBSITE_ID` | Umami 웹사이트 ID (대시보드 API) |
+| `UMAMI_DB_PASSWORD` | Umami 전용 Postgres 비밀번호 (NAS compose) |
+| `UMAMI_APP_SECRET` | Umami 앱 시크릿 (NAS compose) |
 
 로컬은 `.env.example`, NAS는 `.env.nas.example` 참고.
+
+### Umami 설정 (NAS)
+
+1. `.env`에 `UMAMI_DB_PASSWORD`, `UMAMI_APP_SECRET` 설정
+2. `docker compose -f docker-compose.nas.yml up -d umami-db umami`
+3. Cloudflare Tunnel에 `analytics.heavyjungle.com` → `http://umami:3000` 추가
+4. Umami UI에서 웹사이트·API 토큰 생성
+5. `.env`에 `NEXT_PUBLIC_UMAMI_*`, `UMAMI_API_*` 입력 후 **`--build` 재배포**
+
+Umami 미설정 시에도 자체 운영 대시보드(`/admin/dashboard`)는 정상 동작합니다.
 
 ---
 
@@ -567,6 +604,7 @@ Resend (이메일)
 - OAuth 소셜 로그인
 - 아이디 실시간 중복 확인 API
 - 외부 복사 붙여넣기 시 폰트·스타일 정리 (plain / smart paste)
+- 로컬 `docker-compose.yml`에 Umami 서비스 추가 (선택)
 
 ---
 

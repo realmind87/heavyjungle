@@ -17,6 +17,8 @@ services:
       args:
         # NEXT_PUBLIC_S3_PUBLIC_URL is baked into the client bundle at build time
         S3_PUBLIC_URL: ${S3_PUBLIC_URL:-https://s3.heavyjungle.com/uploads}
+        NEXT_PUBLIC_UMAMI_SRC: ${NEXT_PUBLIC_UMAMI_SRC:-}
+        NEXT_PUBLIC_UMAMI_WEBSITE_ID: ${NEXT_PUBLIC_UMAMI_WEBSITE_ID:-}
     container_name: heavyjungle-app
     restart: unless-stopped
     ports:
@@ -42,6 +44,11 @@ services:
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       EMAIL_FROM: ${EMAIL_FROM:-}
       ADMIN_USERNAMES: ${ADMIN_USERNAMES:-}
+      UMAMI_API_URL: ${UMAMI_API_URL:-}
+      UMAMI_API_TOKEN: ${UMAMI_API_TOKEN:-}
+      UMAMI_WEBSITE_ID: ${UMAMI_WEBSITE_ID:-}
+      NEXT_PUBLIC_UMAMI_SRC: ${NEXT_PUBLIC_UMAMI_SRC:-}
+      NEXT_PUBLIC_UMAMI_WEBSITE_ID: ${NEXT_PUBLIC_UMAMI_WEBSITE_ID:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -153,7 +160,37 @@ services:
       "
     restart: "no"
 
+  umami-db:
+    image: postgres:16-alpine
+    container_name: heavyjungle-umami-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: umami
+      POSTGRES_PASSWORD: ${UMAMI_DB_PASSWORD:-umami}
+      POSTGRES_DB: umami
+    volumes:
+      - umami_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U umami -d umami"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    container_name: heavyjungle-umami
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://umami:${UMAMI_DB_PASSWORD:-umami}@umami-db:5432/umami
+      APP_SECRET: ${UMAMI_APP_SECRET:-change-me-umami-secret}
+      DISABLE_TELEMETRY: "1"
+    depends_on:
+      umami-db:
+        condition: service_healthy
+    # 내부 네트워크 전용 — Cloudflare Tunnel 또는 리버스 프록시로 analytics.* 노출
+
 volumes:
   postgres_data:
   redis_data:
   minio_data:
+  umami_db_data:

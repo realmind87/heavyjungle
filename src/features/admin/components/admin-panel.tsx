@@ -32,6 +32,17 @@ const TABS: Array<{ id: AdminTab; label: string }> = [
   { id: "audit-log", label: "감사 로그" },
 ];
 
+function DashboardLink() {
+  return (
+    <a
+      href="/admin/dashboard"
+      className="relative shrink-0 whitespace-nowrap px-4 py-2.5 text-sm font-medium text-zinc-500 transition hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+    >
+      대시보드
+    </a>
+  );
+}
+
 const AUDIT_ACTION_LABEL: Record<AdminAuditLogListItem["action"], string> = {
   notice_create: "공지 등록",
   notice_update: "공지 수정",
@@ -402,6 +413,7 @@ export function AdminPanel({ posts, comments, users, auditLogs, reports, current
         aria-label="관리자 메뉴"
         className="flex gap-1 overflow-x-auto border-b border-zinc-200 dark:border-zinc-700"
       >
+        <DashboardLink />
         {TABS.map((tab) => {
           const isActive = activeTab === tab.id;
           return (

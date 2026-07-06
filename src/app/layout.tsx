@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { SiteBottomNav } from "@/components/layout/site-bottom-nav";
 import { SkipToContent } from "@/components/layout/skip-to-content";
+import { UmamiScript } from "@/components/analytics/umami-script";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { ToastProvider } from "@/components/providers/toast-provider";
@@ -40,6 +41,7 @@ export default function RootLayout({
             <SiteBottomNav />
           </QueryProvider>
         </ThemeProvider>
+        <UmamiScript />
       </body>
     </html>
   );

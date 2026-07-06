@@ -36,6 +36,10 @@ const envSchema = z.object({
       if (!value) return [] as string[];
       return value.split(",").map((item) => item.trim()).filter(Boolean);
     }),
+  /** Umami 통계 API (서버 전용, 선택) */
+  UMAMI_API_URL: z.string().url().optional(),
+  UMAMI_API_TOKEN: z.string().min(1).optional(),
+  UMAMI_WEBSITE_ID: z.string().min(1).optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -56,3 +60,19 @@ function loadEnv(): Env {
 }
 
 export const env = loadEnv();
+
+/** 서버 대시보드 Umami API — UMAMI_* 없으면 null */
+export function getUmamiServerConfig(): {
+  apiUrl: string;
+  apiToken: string;
+  websiteId: string;
+} | null {
+  const { UMAMI_API_URL, UMAMI_API_TOKEN, UMAMI_WEBSITE_ID } = env;
+  if (!UMAMI_API_URL || !UMAMI_API_TOKEN || !UMAMI_WEBSITE_ID) return null;
+
+  return {
+    apiUrl: UMAMI_API_URL.replace(/\/$/, ""),
+    apiToken: UMAMI_API_TOKEN,
+    websiteId: UMAMI_WEBSITE_ID,
+  };
+}
