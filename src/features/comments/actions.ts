@@ -11,6 +11,11 @@ import { sanitizeCommentHtml } from "@/lib/sanitize-comment-html.server";
 import { canModifyComment, requireUser } from "@/server/auth/permissions";
 import { db } from "@/server/db";
 import { comments, posts } from "@/server/db/schema";
+import { assertContentLinksSafe } from "@/server/safety/link-check";
+import {
+  afterContentSavedWithExternalLinks,
+  guardNewAccountExternalLinks,
+} from "@/server/safety/new-account-links";
 
 export type CommentActionState = {
   error?: string;
@@ -41,6 +46,16 @@ export async function createComment(
 
   if (isCommentHtmlEmpty(content)) {
     return { error: "댓글을 입력하세요." };
+  }
+
+  const linkError = await assertContentLinksSafe(content);
+  if (linkError) {
+    return { error: linkError };
+  }
+
+  const newAccountLimitError = await guardNewAccountExternalLinks(user, "comment", content);
+  if (newAccountLimitError) {
+    return { error: newAccountLimitError };
   }
 
   const post = await getPostById(postId);
@@ -106,6 +121,17 @@ export async function createComment(
       }
     }
     throw error;
+  }
+
+  if (newCommentId) {
+    await afterContentSavedWithExternalLinks({
+      user,
+      target: "comment",
+      html: content,
+      postId,
+      commentId: newCommentId,
+    });
+    revalidatePath("/admin");
   }
 
   if (parentAuthorId) {

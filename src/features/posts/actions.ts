@@ -16,6 +16,11 @@ import { sanitizePostHtml } from "@/lib/sanitize-post-html.server";
 import { canModifyPost, isAdmin, requireUser } from "@/server/auth/permissions";
 import { db } from "@/server/db";
 import { posts } from "@/server/db/schema";
+import { assertContentLinksSafe } from "@/server/safety/link-check";
+import {
+  afterContentSavedWithExternalLinks,
+  guardNewAccountExternalLinks,
+} from "@/server/safety/new-account-links";
 
 export type PostActionState = {
   error?: string;
@@ -66,6 +71,16 @@ export async function createPost(
     return { error: "내용을 입력하세요." };
   }
 
+  const linkError = await assertContentLinksSafe(content);
+  if (linkError) {
+    return { error: linkError };
+  }
+
+  const newAccountLimitError = await guardNewAccountExternalLinks(user, "post", content);
+  if (newAccountLimitError) {
+    return { error: newAccountLimitError };
+  }
+
   if (category === "notice" && !userIsAdmin) {
     return { error: "공지사항은 관리자만 등록할 수 있습니다." };
   }
@@ -83,6 +98,14 @@ export async function createPost(
       targetLabel: title,
     });
   }
+
+  await afterContentSavedWithExternalLinks({
+    user,
+    target: "post",
+    html: content,
+    postId: post.id,
+  });
+  revalidatePath("/admin");
 
   revalidatePostListPaths(category, post.id);
   redirect(`/posts/${post.id}`);
@@ -118,6 +141,16 @@ export async function updatePost(
     return { error: "내용을 입력하세요." };
   }
 
+  const linkError = await assertContentLinksSafe(content);
+  if (linkError) {
+    return { error: linkError };
+  }
+
+  const newAccountLimitError = await guardNewAccountExternalLinks(user, "post", content);
+  if (newAccountLimitError) {
+    return { error: newAccountLimitError };
+  }
+
   const post = await getPostById(postId);
 
   if (!post || post.isDeleted) {
@@ -139,6 +172,14 @@ export async function updatePost(
     .update(posts)
     .set({ title, content, category: nextCategory })
     .where(eq(posts.id, postId));
+
+  await afterContentSavedWithExternalLinks({
+    user,
+    target: "post",
+    html: content,
+    postId,
+  });
+  revalidatePath("/admin");
 
   if (userIsAdmin && (nextCategory === "notice" || post.category === "notice")) {
     await logAdminAction({

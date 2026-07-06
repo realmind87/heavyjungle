@@ -36,7 +36,15 @@ describe("sanitizePostHtml round-trip fidelity", () => {
     const sanitized = sanitize(html);
     expect(sanitized).toContain("background-color: #fef3c7");
     expect(sanitized).toContain('href="https://example.com"');
-    expect(sanitized).toContain("target=\"_blank\"");
+    expect(sanitized).toContain('target="_blank"');
+    expect(sanitized).toContain('rel="noopener noreferrer nofollow ugc"');
+  });
+
+  it("omits nofollow for internal heavyjungle.com links", () => {
+    const html = '<a href="https://heavyjungle.com/notices">공지</a>';
+    const sanitized = sanitize(html);
+    expect(sanitized).toContain('rel="noopener noreferrer"');
+    expect(sanitized).not.toContain("nofollow");
   });
 
   it("preserves line breaks, nbsp, and consecutive spaces", () => {

@@ -53,12 +53,14 @@ export async function dismissReport(
     targetLabel: report.targetType === "post" ? "글 신고" : "댓글 신고",
   });
 
-  await createNotification({
-    recipientId: report.reporterId,
-    actorId: user.id,
-    type: "report_dismissed",
-    postId: report.postId ?? undefined,
-  });
+  if (report.reporterId) {
+    await createNotification({
+      recipientId: report.reporterId,
+      actorId: user.id,
+      type: "report_dismissed",
+      postId: report.postId ?? undefined,
+    });
+  }
 
   revalidatePath("/admin");
   return {};
@@ -121,12 +123,14 @@ export async function resolveReportAndRemoveTarget(
     metadata: { reportId: report.id },
   });
 
-  await createNotification({
-    recipientId: report.reporterId,
-    actorId: user.id,
-    type: "report_resolved",
-    postId: report.postId ?? undefined,
-  });
+  if (report.reporterId) {
+    await createNotification({
+      recipientId: report.reporterId,
+      actorId: user.id,
+      type: "report_resolved",
+      postId: report.postId ?? undefined,
+    });
+  }
 
   revalidatePath("/admin");
   revalidatePath("/");

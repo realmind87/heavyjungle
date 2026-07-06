@@ -1,4 +1,5 @@
 import DOMPurify, { type UponSanitizeAttributeHookEvent } from "isomorphic-dompurify";
+import { getAnchorRel } from "@/lib/link-url-policy";
 import {
   isAllowedStoragePublicSrc,
   isAllowedYoutubeEmbedSrc as isAllowedYoutubeEmbedSrcCore,
@@ -83,8 +84,9 @@ function createPostSanitizeHooks(publicBaseUrl: string) {
 
   function postAfterSanitizeAttributesHook(node: Element) {
     if (node.tagName === "A") {
+      const href = node.getAttribute("href") ?? "";
       node.setAttribute("target", "_blank");
-      node.setAttribute("rel", "noopener noreferrer");
+      node.setAttribute("rel", getAnchorRel(href));
     }
 
     if (node.tagName === "IMG") {

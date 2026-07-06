@@ -1,6 +1,7 @@
 import "server-only";
 
 import DOMPurify, { type UponSanitizeAttributeHookEvent } from "isomorphic-dompurify";
+import { getAnchorRel } from "@/lib/link-url-policy";
 import { hasRichCommentMarkup, normalizeCommentInput, stripCommentNbsp } from "@/lib/sanitize-comment-html";
 import { isAllowedCommentImageSrc } from "@/lib/storage-url";
 
@@ -31,8 +32,9 @@ function commentAttributeHook(_node: Element, data: UponSanitizeAttributeHookEve
 
 function commentAfterSanitizeAttributesHook(node: Element) {
   if (node.tagName === "A") {
+    const href = node.getAttribute("href") ?? "";
     node.setAttribute("target", "_blank");
-    node.setAttribute("rel", "noopener noreferrer");
+    node.setAttribute("rel", getAnchorRel(href));
   }
 
   if (node.tagName === "IMG") {

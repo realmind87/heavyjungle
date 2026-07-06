@@ -325,7 +325,13 @@ function ReportsTable({ reports }: { reports: AdminReportListItem[] }) {
                   )}
                 </td>
                 <td className="px-3 py-2 whitespace-nowrap">{REPORT_REASON_LABEL[report.reason]}</td>
-                <td className="px-3 py-2 whitespace-nowrap">{report.reporter.username}</td>
+                <td className="px-3 py-2 whitespace-nowrap">
+                  {report.source === "system" ? (
+                    <span className="text-amber-700 dark:text-amber-400">시스템</span>
+                  ) : (
+                    report.reporter?.username ?? "—"
+                  )}
+                </td>
                 <td className="px-3 py-2 whitespace-nowrap">{formatDate(report.createdAt)}</td>
                 <td className="px-3 py-2 whitespace-nowrap">{REPORT_STATUS_LABEL[report.status]}</td>
                 <td className="px-3 py-2">

@@ -76,6 +76,8 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
   - 리스트 뷰 — 본문 미디어(이미지·영상·유튜브)가 있으면 **오른쪽 썸네일** 표시
 - 썸네일 — 본문 첫 이미지 / 동영상 포스터 / YouTube 썸네일
 - 글 상세 — 조회수·좋아요·댓글 수, 작성자 표시 이름·아바타
+- **외부 링크 SEO** — 본문 A 태그에 `rel="noopener noreferrer nofollow ugc"` (내부 `heavyjungle.com` 링크 제외)
+- **저장 시 링크 검사** — Google Safe Browsing API로 악성 URL 차단 (키 미설정·API 장애 시 fail-open)
 
 ### 공지사항
 
@@ -94,6 +96,7 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
 - 글 상세 **댓글 (n)** 헤더 + 정렬 필터 (왼쪽 정렬)
 - 리치 텍스트 (이미지·링크) — JPEG/PNG/WebP/**GIF** (최대 5MB)
 - 에디터 하단 등록·취소 버튼
+- **외부 링크** — 게시글과 동일하게 `nofollow ugc`·Safe Browsing 검사 적용
 - 작성자 표시 이름·아바타, **좋아요 → 답글 → 신고/삭제** 액션 순
 - 댓글 카드 border 없음, **작성 폼**은 border 유지
 - 답글 등록 성공 시 답글창 자동 닫힘, 일반 댓글은 입력 초기화
@@ -109,9 +112,23 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
 - 글/댓글 **신고** 버튼 — 사유 선택(스팸·욕설·음란물·기타) + 상세 사유 입력
 - 자기 글 신고 불가, 중복 신고 방지, IP/계정 기준 레이트 리미팅(시간당 20/10회)
 - **관리자 신고함** (`/admin` → 신고 탭) — 대기 중 신고 우선 정렬, 미해결 건수 배지
+  - **시스템 자동 신고** — 가입 7일 이내 계정의 외부 링크 글·댓글 → `source: system`, 신고자 **시스템** 표시
   - **해결** — 대상 글/댓글 소프트 삭제 + 신고 상태 변경
   - **기각** — 신고 상태만 변경
   - 처리 내역은 관리자 감사 로그에 자동 기록
+
+### 콘텐츠 링크 안전
+
+- **HTML 정제** — XSS·`javascript:`·폼 주입 차단 (기존 sanitize)
+- **외부 링크 rel** — `noopener noreferrer nofollow ugc` (`src/lib/link-url-policy.ts`)
+  - `heavyjungle.com`·`APP_URL` 내부 링크, S3 공개 URL은 nofollow 제외
+- **Google Safe Browsing** — 글·댓글 저장 직후 외부 URL 검사 (`src/server/safety/link-check.ts`)
+  - Lookup API v4, Redis 6시간 캐시, 악성 URL 차단 + `logger.warn` 기록
+  - `GOOGLE_SAFE_BROWSING_API_KEY` 미설정·API 장애 시 fail-open (등록 허용)
+- **신규 계정 남용 완화** (`src/server/safety/new-account-links.ts`)
+  - 가입 **7일 이내** + 외부 링크 포함 시 강화 레이트리밋 (글 3건/24h, 댓글 10건/24h)
+  - 저장 후 관리자 신고함에 **시스템 검토** 건 자동 등록 (`reports.source = system`, 마이그레이션 `0022`)
+  - 관리자 계정은 적용 제외
 
 ### 알림
 
@@ -250,7 +267,7 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
 - `npm run dev` 시 로컬 DB 자동 기동 (`scripts/ensure-local-db.sh`)
 - NAS 배포: `scripts/nas-deploy.sh`, `scripts/nas-migrate.sh`, `scripts/nas-doctor.sh`
 - **GitHub Actions CI** (`.github/workflows/ci.yml`) — push/PR마다 lint + typecheck + unit test + **Playwright E2E**
-- **Vitest** — 권한·레이트리밋·미디어 URL 정책·메타데이터·신고 검증·게시글 HTML sanitize·댓글 정렬·GIF 업로드·비밀번호 규칙·**관리자 analytics 유틸** 등 (`npm run test`)
+- **Vitest** — 권한·레이트리밋·미디어 URL·링크 정책·Safe Browsing·메타데이터·신고·sanitize·비밀번호 규칙·관리자 analytics 등 (`npm run test`)
 - **Playwright E2E** — 로그인·글·댓글·GIF·**관리자 대시보드 접근 제어** (`npm run test:e2e`, `npm run e2e:seed`)
 - **구조화 서버 로깅** (`src/lib/logger.ts`, `src/instrumentation.ts`) — 운영 RSC 오류를 `docker logs`에서 추적
 - **main push → NAS 자동 배포** (`.github/workflows/deploy-nas.yml`, GitHub Secrets 필요 — 아래 NAS 섹션)
@@ -308,8 +325,10 @@ src/
 │   ├── reports/              # 신고 액션·관리자 처리·UI
 │   └── admin/                # 관리자 액션, 감사 로그, analytics 집계
 ├── server/
-│   └── analytics/            # Umami API 클라이언트
+│   ├── analytics/            # Umami API 클라이언트
+│   └── safety/               # Safe Browsing·신규 계정 링크 정책
 ├── lib/
+│   ├── link-url-policy.ts    # 외부 링크 추출·rel·신뢰 URL 판별
 │   ├── rich-text-editor-format.ts
 │   ├── umami-env.ts          # NEXT_PUBLIC Umami 설정
 │   └── sanitize-post-html-core.ts
@@ -573,8 +592,19 @@ sudo docker compose -f docker-compose.nas.yml logs -f umami  # Umami 로그
 | `UMAMI_API_TOKEN` | Umami Cloud 정적 API 토큰 (선택, 셀프호스팅은 비워둠) |
 | `UMAMI_DB_PASSWORD` | Umami 전용 Postgres 비밀번호 (NAS compose) |
 | `UMAMI_APP_SECRET` | Umami 앱 시크릿 (NAS compose) |
+| `GOOGLE_SAFE_BROWSING_API_KEY` | Google Safe Browsing Lookup API 키 (서버 전용, 선택) |
 
-로컬은 `.env.example`, NAS는 `.env.nas.example` 참고. Docker Compose는 미설정 Umami 변수를 빈 문자열로 주입하므로, 앱은 빈 값을 “미설정”으로 처리합니다.
+로컬은 `.env.example`, NAS는 `.env.nas.example` 참고. Docker Compose는 미설정 Umami·Safe Browsing 변수를 빈 문자열로 주입하므로, 앱은 빈 값을 “미설정”으로 처리합니다.
+
+### Google Safe Browsing (선택)
+
+1. [Google Cloud Console](https://console.cloud.google.com/apis/library/safebrowsing.googleapis.com)에서 Safe Browsing API 활성화
+2. API 키 생성 후 `.env` / NAS `.env`에 설정:
+   ```env
+   GOOGLE_SAFE_BROWSING_API_KEY=your-api-key
+   ```
+3. `docker-compose.nas.yml`은 런타임 주입 — **`--build` 재배포** (`env.ts` 검증 반영)
+4. 미설정 시 앱은 정상 동작하며 외부 링크 검사만 생략(fail-open)
 
 ### Umami 설정 (NAS)
 
@@ -641,8 +671,9 @@ Resend (이메일)
 - **카운터 캐시** — `view_count`, `like_count`, `comment_count`
 - **소셜** — `follows`, `blocks` 테이블, 피드·상호작용에서 차단 관계 반영
 - **공지** — `posts.category` (`general` \| `notice`)
-- **알림/신고** — `notifications`, `reports`, `admin_audit_logs` 테이블
+- **알림/신고** — `notifications`, `reports` (`source`: user/system), `admin_audit_logs` 테이블
 - **레이트 리미팅** — Redis `INCR` + `EXPIRE` 고정 윈도우, Redis 장애 시 fail-open
+- **링크 안전** — sanitize → Safe Browsing → (신규 계정) 레이트리밋·시스템 신고
 
 ---
 
@@ -655,11 +686,13 @@ Resend (이메일)
 - [x] 관리자 운영 대시보드 (`/admin/dashboard`) — KPI·추이·콘텐츠·사용자·운영·방문자 **탭 UI**
 - [x] Admin 대시보드 Umami 연동 (로그인 방식 API — 셀프호스팅용)
 - [x] **계정 보안 5종** — 이메일 인증, 계정 열거 방지, HIBP 유출 비밀번호 차단, 로그인 알림·세션 관리, TOTP 2FA
+- [x] **콘텐츠 링크 안전** — `nofollow ugc`, Google Safe Browsing 검사, 신규 계정 외부 링크 레이트리밋·시스템 자동 신고
 - [x] Docker `npm ci` lockfile 수정 (recharts·otplib 이후 NAS 빌드)
 - [x] 502 원인 수정 (`env.ts` 빈 문자열 검증 이슈)
 
 ### 남은 할 일 — 보안 마무리 (운영 확인)
 
+- [ ] `GOOGLE_SAFE_BROWSING_API_KEY` 발급·NAS `.env` 설정 후 재배포
 - [ ] Umami 기본 비밀번호(`admin`/`umami`) 변경 → `.env` `UMAMI_PASSWORD` 동기화
 - [ ] MinIO 기본 비밀번호(`minioadmin`) 변경
 - [ ] `analytics.heavyjungle.com` 피싱 경고 처리 (Cloudflare Access 또는 Search Console 검토 요청)

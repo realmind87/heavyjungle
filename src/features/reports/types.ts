@@ -1,6 +1,7 @@
 export type ReportTargetType = "post" | "comment";
 export type ReportReason = "spam" | "abuse" | "illegal" | "other";
 export type ReportStatus = "pending" | "resolved" | "dismissed";
+export type ReportSource = "user" | "system";
 
 export const REPORT_REASON_LABEL: Record<ReportReason, string> = {
   spam: "스팸/광고",

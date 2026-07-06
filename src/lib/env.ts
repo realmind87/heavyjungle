@@ -58,6 +58,8 @@ const envSchema = z.object({
   UMAMI_WEBSITE_ID: optionalNonEmptyString(),
   UMAMI_USERNAME: optionalNonEmptyString(),
   UMAMI_PASSWORD: optionalNonEmptyString(),
+  /** Google Safe Browsing Lookup API — 외부 링크 악성 검사 (서버 전용, 선택) */
+  GOOGLE_SAFE_BROWSING_API_KEY: optionalNonEmptyString(),
 });
 
 export type Env = z.infer<typeof envSchema>;
