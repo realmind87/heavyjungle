@@ -68,8 +68,8 @@ try {
   const passwordHash = await hash(tempPassword, ARGON2_OPTIONS);
 
   const [created] = await sql`
-    INSERT INTO users (username, email, password_hash, role)
-    VALUES (${username}, ${email}, ${passwordHash}, 'admin')
+    INSERT INTO users (username, email, password_hash, role, email_verified_at)
+    VALUES (${username}, ${email}, ${passwordHash}, 'admin', NOW())
     RETURNING username, email
   `;
 

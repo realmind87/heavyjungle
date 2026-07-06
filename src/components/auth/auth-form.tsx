@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import type { AuthActionState } from "@/features/auth/actions";
-import { buttonPrimaryFullClass, errorTextClass } from "@/lib/ui-classes";
+import { buttonPrimaryFullClass, errorTextClass, successTextClass } from "@/lib/ui-classes";
 
 type AuthFormProps = {
   action: (prevState: AuthActionState, formData: FormData) => Promise<AuthActionState>;
@@ -13,6 +13,10 @@ type AuthFormProps = {
 
 export function AuthForm({ action, submitLabel, children, next }: AuthFormProps) {
   const [state, formAction, pending] = useActionState(action, {});
+
+  if (state.success) {
+    return <p className={successTextClass}>{state.message}</p>;
+  }
 
   return (
     <form action={formAction} className="space-y-4">

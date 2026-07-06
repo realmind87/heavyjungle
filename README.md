@@ -34,6 +34,12 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
 - 관리자 계정 생성·승격 스크립트 (`scripts/create-admin-user.mjs`, `scripts/nas-promote-admin.sh`)
 - **레이트 리미팅** (Redis 고정 윈도우, 장애 시 fail-open)
   - 로그인 IP/계정, 회원가입 IP, 아이디·비밀번호 찾기, 업로드, 신고 등 주요 액션에 적용
+- **가입 이메일 인증** — 가입 후 인증 메일 (`/verify-email`), 미인증 시 로그인 불가, 재발송 (`/login/resend-verification`)
+- **계정 열거 방지** — 아이디 찾기·비밀번호 재설정 요청 시 동일 응답
+- **유출 비밀번호 차단** — Have I Been Pwned k-anonymity (가입·변경·재설정)
+- **로그인 알림** — 새 IP 로그인 시 이메일 알림
+- **활성 세션 관리** — `/u/[username]/settings/security`에서 기기별 세션 종료
+- **TOTP 2단계 인증** — 인증 앱 연동, 로그인 시 6자리 코드 추가 입력
 
 ### 게시글
 
@@ -626,7 +632,40 @@ Resend (이메일)
 
 ---
 
-## 향후 예정
+## 작업 현황 & 남은 할 일
+
+### 완료 (최근)
+
+- [x] Umami 방문자 분석 셀프호스팅 (NAS Docker: `umami` + `umami-db`)
+- [x] 추적 스크립트 연결 (`NEXT_PUBLIC_UMAMI_*`)
+- [x] 관리자 운영 대시보드 (`/admin/dashboard`) — KPI·추이·콘텐츠·사용자·운영·방문자 **탭 UI**
+- [x] Admin 대시보드 Umami 연동 (로그인 방식 API — 셀프호스팅용)
+- [x] Docker `npm ci` lockfile 수정 (recharts 이후 NAS 빌드)
+- [x] 502 원인 수정 (`env.ts` 빈 문자열 검증 이슈)
+
+### 남은 할 일 — 계정 보안 5종
+
+- [x] **1. 가입 시 이메일 인증** — `emailVerifiedAt` + verification 토큰
+- [x] **2. 계정 열거 방지** — find-username·reset 응답 통일
+- [x] **3. 유출 비밀번호 차단** — Have I Been Pwned k-anonymity
+- [x] **4. 로그인/새 기기 알림 메일** + 활성 세션 목록 (`/u/[username]/settings/security`)
+- [x] **5. TOTP 2단계 인증** — 로그인 2단계 + 보안 설정에서 on/off
+
+> 소셜 로그인(OAuth)은 추후 별도 진행 (`users.password_hash`는 이미 nullable)
+
+### 남은 할 일 — 보안 마무리 (운영 확인)
+
+- [ ] Umami 기본 비밀번호(`admin`/`umami`) 변경 → `.env` `UMAMI_PASSWORD` 동기화
+- [ ] MinIO 기본 비밀번호(`minioadmin`) 변경
+- [ ] `analytics.heavyjungle.com` 피싱 경고 처리 (Cloudflare Access 또는 Search Console 검토 요청)
+- [ ] `heavyjungle.com` Safe Browsing 정상 확인
+
+### 선택 확장 아이디어
+
+- [ ] 방문자·운영 지표 매일 아침 요약 (스케줄 작업)
+- [ ] Admin 대시보드 실시간 접속자 위젯
+
+### 기타 향후 예정
 
 - OAuth 소셜 로그인
 - 아이디 실시간 중복 확인 API

@@ -3,7 +3,9 @@
 import { randomBytes } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
+import { RECOVERY_EMAIL_SENT_MESSAGE } from "@/lib/auth/recovery-messages";
 import { hashToken } from "@/lib/auth/token-hash";
+import { assertPasswordNotBreached } from "@/lib/password-breach";
 import { env } from "@/lib/env";
 import {
   findUsernameSchema,
@@ -79,22 +81,20 @@ export async function findUsername(
     .where(eq(users.email, email))
     .limit(1);
 
-  if (!user) {
-    return { error: "등록된 이메일이 아닙니다." };
+  if (user) {
+    try {
+      await sendEmail({
+        to: email,
+        subject: "[Heavy Jungle] 아이디 안내",
+        text: `가입하신 아이디는 "${user.username}" 입니다.`,
+        html: `<p>가입하신 아이디는 <strong>${user.username}</strong> 입니다.</p>`,
+      });
+    } catch {
+      return { error: "메일 발송에 실패했습니다. 잠시 후 다시 시도해 주세요." };
+    }
   }
 
-  try {
-    await sendEmail({
-      to: email,
-      subject: "[Heavy Jungle] 아이디 안내",
-      text: `가입하신 아이디는 "${user.username}" 입니다.`,
-      html: `<p>가입하신 아이디는 <strong>${user.username}</strong> 입니다.</p>`,
-    });
-  } catch {
-    return { error: "메일 발송에 실패했습니다. 잠시 후 다시 시도해 주세요." };
-  }
-
-  return { success: true, message: "입력하신 이메일로 아이디를 발송했습니다." };
+  return { success: true, message: RECOVERY_EMAIL_SENT_MESSAGE };
 }
 
 export async function requestPasswordReset(
@@ -126,29 +126,23 @@ export async function requestPasswordReset(
     .where(eq(users.email, email))
     .limit(1);
 
-  if (!user) {
-    return { error: "등록된 이메일이 아닙니다." };
+  if (user?.passwordHash) {
+    try {
+      const token = await createPasswordResetToken(user.id);
+      const resetUrl = `${env.APP_URL}/reset-password?token=${encodeURIComponent(token)}`;
+
+      await sendEmail({
+        to: email,
+        subject: "[Heavy Jungle] 비밀번호 재설정",
+        text: `아래 링크에서 비밀번호를 재설정할 수 있습니다. (1시간 유효)\n\n${resetUrl}`,
+        html: `<p>아래 링크에서 비밀번호를 재설정할 수 있습니다. (1시간 유효)</p><p><a href="${resetUrl}">${resetUrl}</a></p>`,
+      });
+    } catch {
+      return { error: "메일 발송에 실패했습니다. 잠시 후 다시 시도해 주세요." };
+    }
   }
 
-  if (!user.passwordHash) {
-    return { error: "소셜 로그인 등 비밀번호가 없는 계정입니다." };
-  }
-
-  try {
-    const token = await createPasswordResetToken(user.id);
-    const resetUrl = `${env.APP_URL}/reset-password?token=${encodeURIComponent(token)}`;
-
-    await sendEmail({
-      to: email,
-      subject: "[Heavy Jungle] 비밀번호 재설정",
-      text: `아래 링크에서 비밀번호를 재설정할 수 있습니다. (1시간 유효)\n\n${resetUrl}`,
-      html: `<p>아래 링크에서 비밀번호를 재설정할 수 있습니다. (1시간 유효)</p><p><a href="${resetUrl}">${resetUrl}</a></p>`,
-    });
-  } catch {
-    return { error: "메일 발송에 실패했습니다. 잠시 후 다시 시도해 주세요." };
-  }
-
-  return { success: true, message: "입력하신 이메일로 비밀번호 재설정 링크를 발송했습니다." };
+  return { success: true, message: RECOVERY_EMAIL_SENT_MESSAGE };
 }
 
 export async function resetPassword(
@@ -174,6 +168,12 @@ export async function resetPassword(
   }
 
   const { token, password } = parsed.data;
+
+  const breachError = await assertPasswordNotBreached(password);
+  if (breachError) {
+    return { error: breachError };
+  }
+
   const tokenHash = hashToken(token);
 
   const [row] = await db

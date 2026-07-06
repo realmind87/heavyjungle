@@ -1,19 +1,15 @@
 import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { users } from "./users";
 
-export const sessions = pgTable("sessions", {
+/** 가입 이메일 인증 — 링크 확인 후 users.email_verified_at 설정 */
+export const emailVerificationTokens = pgTable("email_verification_tokens", {
   id: uuid("id").defaultRandom().primaryKey(),
-  /** SHA-256 해시 — 원본 토큰은 쿠키에만 보관 */
   tokenHash: text("token_hash").notNull().unique(),
   userId: uuid("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-  userAgent: text("user_agent"),
-  ipAddress: text("ip_address"),
-  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export type Session = typeof sessions.$inferSelect;
-export type NewSession = typeof sessions.$inferInsert;
+export type EmailVerificationToken = typeof emailVerificationTokens.$inferSelect;

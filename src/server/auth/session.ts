@@ -13,6 +13,7 @@ import {
   getSessionMirror,
   setSessionMirror,
 } from "@/server/auth/session-cache";
+import type { SessionMetadata } from "@/server/auth/session-types";
 import { db } from "@/server/db";
 import { sessions, users } from "@/server/db/schema";
 import type { User } from "@/server/db/schema/users";
@@ -35,7 +36,7 @@ function sessionExpiresAt(): Date {
   return new Date(Date.now() + SESSION_MAX_AGE_SECONDS * 1000);
 }
 
-export async function createSession(userId: string): Promise<string> {
+export async function createSession(userId: string, metadata?: SessionMetadata): Promise<string> {
   const token = generateSessionToken();
   const tokenHash = hashSessionToken(token);
   const expiresAt = sessionExpiresAt();
@@ -44,6 +45,9 @@ export async function createSession(userId: string): Promise<string> {
     tokenHash,
     userId,
     expiresAt,
+    userAgent: metadata?.userAgent ?? null,
+    ipAddress: metadata?.ipAddress ?? null,
+    lastSeenAt: new Date(),
   });
 
   await setSessionMirror(tokenHash, userId, expiresAt);
@@ -147,6 +151,23 @@ export async function deleteSession(token: string): Promise<void> {
   const mirror = await getSessionMirror(tokenHash);
   await db.delete(sessions).where(eq(sessions.tokenHash, tokenHash));
   await deleteSessionMirror(tokenHash, mirror?.userId);
+}
+
+export async function deleteSessionById(sessionId: string, userId: string): Promise<void> {
+  const [row] = await db
+    .select({ tokenHash: sessions.tokenHash })
+    .from(sessions)
+    .where(and(eq(sessions.id, sessionId), eq(sessions.userId, userId)))
+    .limit(1);
+
+  if (!row) return;
+
+  await db.delete(sessions).where(eq(sessions.id, sessionId));
+  await deleteSessionMirror(row.tokenHash, userId);
+}
+
+export async function hashSessionTokenForLookup(token: string): Promise<string> {
+  return hashSessionToken(token);
 }
 
 /** 비밀번호 변경 등 — 현재 세션을 제외한 다른 기기 세션 무효화 */

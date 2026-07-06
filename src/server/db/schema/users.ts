@@ -14,6 +14,9 @@ export const users = pgTable("users", {
   /** 아바타 URL (파일 업로드는 다음 단계) */
   avatarUrl: text("avatar_url"),
   role: userRoleEnum("role").notNull().default("user"),
+  emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
+  totpSecret: text("totp_secret"),
+  totpEnabledAt: timestamp("totp_enabled_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()

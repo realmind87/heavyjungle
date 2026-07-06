@@ -252,6 +252,16 @@ export function ProfileSettingsMenu({
                   <>
                     <li>
                       <Link
+                        href={`/u/${username}/settings/security`}
+                        onClick={closeMenu}
+                        className={menuItemClass}
+                      >
+                        <span>보안 설정</span>
+                        <ChevronIcon />
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
                         href={`/u/${username}/settings/password`}
                         onClick={closeMenu}
                         className={menuItemClass}

@@ -50,14 +50,14 @@ try {
   if (existing.length > 0) {
     await sql`
       UPDATE users
-      SET password_hash = ${passwordHash}, email = ${email}, username = ${username}
+      SET password_hash = ${passwordHash}, email = ${email}, username = ${username}, email_verified_at = NOW()
       WHERE id = ${existing[0].id}
     `;
     console.log(`E2E 계정 비밀번호를 동기화했습니다: ${username}`);
   } else {
     await sql`
-      INSERT INTO users (username, email, password_hash, role)
-      VALUES (${username}, ${email}, ${passwordHash}, 'user')
+      INSERT INTO users (username, email, password_hash, role, email_verified_at)
+      VALUES (${username}, ${email}, ${passwordHash}, 'user', NOW())
     `;
     console.log(`E2E 계정을 생성했습니다: ${username}`);
   }

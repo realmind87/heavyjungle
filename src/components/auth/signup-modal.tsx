@@ -99,19 +99,25 @@ export function SignUpModal({ isOpen, onClose, onSwitchToLogin, next }: SignUpMo
             <SignUpPasswordFields inputClassName={modalInputClass} labelClassName={modalLabelClass} />
           </div>
 
-          {state.error && (
-            <p className="mt-4 text-sm text-red-600 dark:text-red-400" role="alert">
-              {state.error}
-            </p>
-          )}
+          {state.success ? (
+            <p className="mt-6 text-sm text-green-600 dark:text-green-400">{state.message}</p>
+          ) : (
+            <>
+              {state.error && (
+                <p className="mt-4 text-sm text-red-600 dark:text-red-400" role="alert">
+                  {state.error}
+                </p>
+              )}
 
-          <button
-            type="submit"
-            disabled={pending}
-            className="mt-6 w-full rounded-lg bg-zinc-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-          >
-            {pending ? "가입 중..." : "회원가입"}
-          </button>
+              <button
+                type="submit"
+                disabled={pending}
+                className="mt-6 w-full rounded-lg bg-zinc-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+              >
+                {pending ? "가입 중..." : "회원가입"}
+              </button>
+            </>
+          )}
 
           {onSwitchToLogin && (
             <p className="mt-4 text-center text-sm text-zinc-500 dark:text-zinc-400">

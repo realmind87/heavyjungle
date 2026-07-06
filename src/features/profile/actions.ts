@@ -13,6 +13,7 @@ import {
   changePasswordSchema,
   updateProfileSchema,
 } from "@/features/profile/validators";
+import { assertPasswordNotBreached } from "@/lib/password-breach";
 import { hashToken } from "@/lib/auth/token-hash";
 import { env } from "@/lib/env";
 import { getSessionTokenFromCookies } from "@/server/auth/cookies";
@@ -98,6 +99,11 @@ export async function changePassword(
   }
 
   const { currentPassword, newPassword } = parsed.data;
+
+  const breachError = await assertPasswordNotBreached(newPassword);
+  if (breachError) {
+    return { error: breachError };
+  }
 
   const ip = await getClientIp();
   const rateLimit = await checkRateLimits([
@@ -268,7 +274,10 @@ export async function confirmEmailChange(
   }
 
   await db.transaction(async (tx) => {
-    await tx.update(users).set({ email: row.newEmail }).where(eq(users.id, row.userId));
+    await tx
+      .update(users)
+      .set({ email: row.newEmail, emailVerifiedAt: new Date() })
+      .where(eq(users.id, row.userId));
     await tx.delete(emailChangeTokens).where(eq(emailChangeTokens.userId, row.userId));
   });
 

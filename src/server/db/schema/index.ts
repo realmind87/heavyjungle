@@ -9,6 +9,7 @@ export * from "./follows";
 export * from "./blocks";
 export * from "./password-reset-tokens";
 export * from "./email-change-tokens";
+export * from "./email-verification-tokens";
 export * from "./admin-audit-logs";
 export * from "./notifications";
 export * from "./reports";

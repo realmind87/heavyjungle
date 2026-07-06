@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { SESSION_COOKIE_NAME, isSessionTokenFormatValid } from "@/lib/auth/session-token";
 
 const PROTECTED_PATHS = ["/settings", "/write", "/admin"];
-const AUTH_REDIRECT_PATHS = ["/login", "/signup", "/login/find-username", "/login/forgot-password"];
+const AUTH_REDIRECT_PATHS = ["/login", "/signup", "/login/find-username", "/login/forgot-password", "/login/resend-verification"];
 
 function matchesPath(pathname: string, paths: string[]): boolean {
   return paths.some((path) => pathname === path || pathname.startsWith(`${path}/`));
@@ -48,6 +48,7 @@ export const config = {
     "/login",
     "/login/find-username",
     "/login/forgot-password",
+    "/login/resend-verification",
     "/signup",
     "/posts/:id/edit",
   ],
