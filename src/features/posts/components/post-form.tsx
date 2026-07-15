@@ -213,6 +213,58 @@ function PostFormBody({
     }
   }
 
+  const actionBar = (
+    <div className="flex items-center justify-between gap-2">
+      <div
+        role="tablist"
+        aria-label="본문 작성 모드"
+        className="inline-flex shrink-0 rounded-lg border border-zinc-200 p-1 dark:border-zinc-700"
+      >
+        {(
+          [
+            { id: "write" as const, label: "작성" },
+            { id: "preview" as const, label: "미리보기" },
+          ] as const
+        ).map((tab) => {
+          const isActive = editorMode === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => handleEditorModeChange(tab.id)}
+              className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
+                isActive
+                  ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                  : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+              }`}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+      <Link href={cancelHref} className={`${buttonSecondaryClass} ml-auto`}>
+        취소
+      </Link>
+      <button type="submit" disabled={pending || isContentEmpty || isTitleEmpty} className={buttonPrimaryClass}>
+        {pending ? pendingLabel : submitLabel}
+      </button>
+      {deleteAction && (
+        <button
+          type="submit"
+          formAction={deleteAction}
+          data-action="delete"
+          disabled={deletePending}
+          className={buttonDangerClass}
+        >
+          {deletePending ? "삭제 중..." : "글 삭제"}
+        </button>
+      )}
+    </div>
+  );
+
   return (
     <form action={formAction} className="space-y-4" onSubmit={handleSubmit}>
       {postId && <input type="hidden" name="postId" value={postId} />}
@@ -255,6 +307,8 @@ function PostFormBody({
         />
       </div>
 
+      <input ref={contentInputRef} type="hidden" name="content" defaultValue={initialContent} />
+
       <div className={editorMode === "preview" ? "hidden" : undefined}>
         <PostRichTextEditor
           editorRef={editorRef}
@@ -265,62 +319,26 @@ function PostFormBody({
             syncContent();
             setContentError(null);
           }}
+          footer={
+            editorMode === "write" ? (
+              <>
+                {actionBar}
+                {deleteState?.error && <p className={errorTextClass}>{deleteState.error}</p>}
+              </>
+            ) : undefined
+          }
         />
       </div>
+
       {editorMode === "preview" && (
-        <PostDraftPreview title={previewTitle} html={previewHtml} />
+        <>
+          <PostDraftPreview title={previewTitle} html={previewHtml} />
+          <div className="sticky bottom-0 z-40 -mx-4 space-y-3 border-t border-zinc-200 bg-[var(--background)]/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur dark:border-zinc-700">
+            {actionBar}
+            {deleteState?.error && <p className={errorTextClass}>{deleteState.error}</p>}
+          </div>
+        </>
       )}
-      <input ref={contentInputRef} type="hidden" name="content" defaultValue={initialContent} />
-      <div className="flex items-center justify-between gap-2">
-        <div
-          role="tablist"
-          aria-label="본문 작성 모드"
-          className="inline-flex shrink-0 rounded-lg border border-zinc-200 p-1 dark:border-zinc-700"
-        >
-          {(
-            [
-              { id: "write" as const, label: "작성" },
-              { id: "preview" as const, label: "미리보기" },
-            ] as const
-          ).map((tab) => {
-            const isActive = editorMode === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                role="tab"
-                aria-selected={isActive}
-                onClick={() => handleEditorModeChange(tab.id)}
-                className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
-                  isActive
-                    ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-                    : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-                }`}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
-        <Link href={cancelHref} className={`${buttonSecondaryClass} ml-auto`}>
-          취소
-        </Link>
-        <button type="submit" disabled={pending || isContentEmpty || isTitleEmpty} className={buttonPrimaryClass}>
-          {pending ? pendingLabel : submitLabel}
-        </button>
-        {deleteAction && (
-          <button
-            type="submit"
-            formAction={deleteAction}
-            data-action="delete"
-            disabled={deletePending}
-            className={buttonDangerClass}
-          >
-            {deletePending ? "삭제 중..." : "글 삭제"}
-          </button>
-        )}
-      </div>
-      {deleteState?.error && <p className={errorTextClass}>{deleteState.error}</p>}
     </form>
   );
 }

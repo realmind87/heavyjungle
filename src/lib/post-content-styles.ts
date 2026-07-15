@@ -21,6 +21,7 @@ export const postContentProseClass =
 
 /** 에디터 전용 — 선택·커서 등 편집 UI만 추가 */
 export const postContentEditorExtraClass =
-  "[&_img]:cursor-pointer [&_video]:cursor-pointer " +
+  "[&_img]:cursor-grab [&_img]:active:cursor-grabbing [&_video]:cursor-pointer " +
+  "[&_img.editor-image-dragging]:opacity-40 " +
   "[&_img.editor-image-selected]:outline [&_img.editor-image-selected]:outline-2 [&_img.editor-image-selected]:outline-blue-500 [&_img.editor-image-selected]:outline-offset-2 " +
   "[&_video.editor-image-selected]:outline [&_video.editor-image-selected]:outline-2 [&_video.editor-image-selected]:outline-blue-500 [&_video.editor-image-selected]:outline-offset-2";

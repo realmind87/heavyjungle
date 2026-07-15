@@ -67,6 +67,47 @@ body {
   }
 }
 
+/* 에디터 이미지 드래그 드롭 위치 표시 */
+.editor-image-drop-indicator {
+  position: relative;
+  height: 3px;
+  margin: 0.5rem 0;
+  border-radius: 9999px;
+  background: #3b82f6;
+  pointer-events: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.editor-image-drop-indicator::before,
+.editor-image-drop-indicator::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: #3b82f6;
+  transform: translateY(-50%);
+}
+
+.editor-image-drop-indicator::before {
+  left: 0;
+}
+
+.editor-image-drop-indicator::after {
+  right: 0;
+}
+
+.dark .editor-image-drop-indicator {
+  background: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+}
+
+.dark .editor-image-drop-indicator::before,
+.dark .editor-image-drop-indicator::after {
+  background: #60a5fa;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

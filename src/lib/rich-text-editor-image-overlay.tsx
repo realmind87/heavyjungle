@@ -26,6 +26,7 @@ export function EditorImageOverlay({
 
   const deleteSize = compact ? "h-5 w-5" : "h-6 w-6";
   const deleteIcon = compact ? "h-3 w-3" : "h-3.5 w-3.5";
+  const resizeSize = compact ? "h-4 w-4" : "h-5 w-5";
 
   return (
     <>
@@ -35,7 +36,7 @@ export function EditorImageOverlay({
         title="이미지 삭제"
         onMouseDown={(event) => event.preventDefault()}
         onClick={() => void onDelete()}
-        className={`absolute z-10 inline-flex ${deleteSize} items-center justify-center rounded-full bg-red-500 text-white shadow transition hover:bg-red-600`}
+        className={`absolute z-30 inline-flex ${deleteSize} items-center justify-center rounded-full bg-red-500 text-white shadow transition hover:bg-red-600`}
         style={{ top: deletePosition.top, left: deletePosition.left }}
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={deleteIcon} aria-hidden="true">
@@ -49,7 +50,7 @@ export function EditorImageOverlay({
           aria-label="이미지 크기 조절"
           title="드래그하여 크기 조절"
           onPointerDown={onResizePointerDown}
-          className="absolute z-10 h-3.5 w-3.5 cursor-se-resize rounded-sm border-2 border-white bg-blue-500 shadow"
+          className={`absolute z-30 ${resizeSize} touch-none cursor-se-resize rounded-sm border-2 border-white bg-blue-500 shadow`}
           style={{ top: resizePosition.top, left: resizePosition.left }}
         />
       )}

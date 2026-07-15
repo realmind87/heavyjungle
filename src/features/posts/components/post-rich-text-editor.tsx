@@ -1,6 +1,6 @@
 "use client";
 
-import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
+import { type ReactNode, type RefObject, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "@/components/ui/toast";
 import {
   createPostImageUploadUrl,
@@ -44,6 +44,8 @@ type PostRichTextEditorProps = {
   isEmpty: boolean;
   errorMessage?: string | null;
   onInput: () => void;
+  /** 툴바와 함께 sticky 하단에 고정할 영역 (작성/등록 버튼 등) */
+  footer?: ReactNode;
 };
 
 type VideoPosterSelectorState = {
@@ -408,6 +410,7 @@ export function PostRichTextEditor({
   isEmpty,
   errorMessage = null,
   onInput,
+  footer,
 }: PostRichTextEditorProps) {
   const savedRangeRef = useRef<Range | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -943,9 +946,8 @@ export function PostRichTextEditor({
 
   return (
     <div className="rounded-lg bg-white dark:bg-zinc-900">
-
-
-      <div className="relative">
+      <div className="relative" data-editor-overlay-root="">
+        <div className="relative" data-editor-scroll-host="">
         {posterSelector && (
           <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/60 p-4">
             <div className="w-full max-w-2xl rounded-2xl border border-zinc-700 bg-zinc-950 p-5 shadow-2xl">
@@ -1078,6 +1080,7 @@ export function PostRichTextEditor({
           onKeyDown={handleEditorKeyDown}
           className={`min-h-[200px] outline-none ${postContentProseClass} ${postContentEditorExtraClass}`}
         />
+        </div>
         {selectedImage && (
           <EditorImageOverlay
             showResize={selectedImage instanceof HTMLImageElement}
@@ -1089,11 +1092,12 @@ export function PostRichTextEditor({
         )}
       </div>
 
-      <div
-        role="toolbar"
-        aria-label="서식 도구"
-        className="flex flex-wrap items-center gap-1 border-b pb-2 border-zinc-200 dark:border-zinc-700"
-      >
+      <div className="sticky bottom-0 z-40 -mx-4 mt-4 space-y-3 border-t border-zinc-200 bg-[var(--background)]/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur dark:border-zinc-700">
+        <div
+          role="toolbar"
+          aria-label="서식 도구"
+          className="flex flex-wrap items-center gap-1"
+        >
         <FontSizePicker onBeforeOpen={handleFontSizePointerDown} onSelect={applyFontSize} />
 
         <ToolbarButton
@@ -1234,6 +1238,8 @@ export function PostRichTextEditor({
             if (file) void handleVideoFile(file);
           }}
         />
+        </div>
+        {footer}
       </div>
     </div>
   );

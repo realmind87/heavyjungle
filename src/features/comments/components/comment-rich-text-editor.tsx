@@ -220,7 +220,8 @@ export function CommentRichTextEditor({
 
   return (
     <div>
-      <div className="relative">
+      <div className="relative" data-editor-overlay-root="">
+        <div className="relative" data-editor-scroll-host="">
         {isEmpty && (
           <div
             aria-hidden="true"
@@ -244,8 +245,9 @@ export function CommentRichTextEditor({
             onInput();
           }}
           autoFocus={autoFocus}
-          className={`${minHeightClass} w-full text-sm text-zinc-900 outline-none dark:text-zinc-50 [&_a]:text-blue-600 [&_a]:underline dark:[&_a]:text-blue-400 [&_img]:my-1 [&_img]:block [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-md [&_img]:cursor-pointer [&_img.editor-image-selected]:outline [&_img.editor-image-selected]:outline-2 [&_img.editor-image-selected]:outline-blue-500 [&_img.editor-image-selected]:outline-offset-2`}
+          className={`${minHeightClass} w-full text-sm text-zinc-900 outline-none dark:text-zinc-50 [&_a]:text-blue-600 [&_a]:underline dark:[&_a]:text-blue-400 [&_img]:my-1 [&_img]:block [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-md [&_img]:cursor-grab [&_img]:active:cursor-grabbing [&_img.editor-image-dragging]:opacity-40 [&_img.editor-image-selected]:outline [&_img.editor-image-selected]:outline-2 [&_img.editor-image-selected]:outline-blue-500 [&_img.editor-image-selected]:outline-offset-2`}
         />
+        </div>
         {selectedImage && (
           <EditorImageOverlay
             showResize={selectedImage instanceof HTMLImageElement}
