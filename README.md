@@ -58,11 +58,15 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
   - **글자 크기** — 부분 선택·한 줄 전체·`Ctrl+A` 전체 선택 모두 지원 (블록/텍스트 단위)
   - **색상** — `foreColor` 기반 적용
   - 굵게·기울임·취소선 — `execCommand` + `styleWithCSS` (일반 WYSIWYG 패턴)
-  - **이미지** 업로드 (JPEG/PNG/WebP/**GIF**, 최대 100MB) — 선택 후 X 삭제, 좌·가운데·우 정렬, **드래그 핸들 수동 리사이즈**
+  - **이미지** 업로드 (JPEG/PNG/WebP/**GIF**, 최대 100MB)
+    - 선택 후 X 삭제, 좌·가운데·우 정렬
+    - **드래그로 본문 위치 이동** — 드롭 위치에 파란 가이드 라인 표시 (`src/lib/rich-text-editor-image.ts`)
+    - **드래그 핸들 수동 리사이즈** — 보이는 영역 기준으로 핸들 고정, 스크롤바와 겹침 방지
   - 발행 본문 — 에디터 정렬·인라인 `width` 스타일 보존 (`dangerouslySetInnerHTML`, `max-w-full`)
   - **동영상** 업로드 (MP4/WebM/MOV, 최대 1GB) — 진행률·취소, 커버 프레임 드래그 선택
   - **YouTube** embed 삽입
   - 툴바 아이콘 버튼은 border 없는 플랫 스타일 (`크기` 드롭다운만 border 유지)
+  - **하단 sticky 바** — 서식 툴바 + 작성/미리보기·취소·등록을 본문이 길어져도 화면 하단에 고정 (`sticky`, `fixed` 대신 사용)
   - **키보드 단축키**
     - `Tab` / `Shift+Tab` — 들여쓰기 / 내어쓰기
     - 들여쓰기 줄 맨 앞에서 `Backspace` — 내어쓰기 (커서 점프 없음)
@@ -75,7 +79,8 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
   - 커서 페이지네이션 + 더 보기
   - 리스트 뷰 — 본문 미디어(이미지·영상·유튜브)가 있으면 **오른쪽 썸네일** 표시
 - 썸네일 — 본문 첫 이미지 / 동영상 포스터 / YouTube 썸네일
-- 글 상세 — 조회수·좋아요·댓글 수, 작성자 표시 이름·아바타
+- 글 상세 — `PostDetail` 조합 (`post-detail-header` · `post-detail-actions` · 콘텐츠)
+  - 조회수·좋아요·댓글 수, 작성자 표시 이름·아바타, 수정·삭제·신고
 - **외부 링크 SEO** — 본문 A 태그에 `rel="noopener noreferrer nofollow ugc"` (내부 `heavyjungle.com` 링크 제외)
 - **저장 시 링크 검사** — Google Safe Browsing API로 악성 URL 차단 (키 미설정·API 장애 시 fail-open)
 
@@ -95,6 +100,7 @@ Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server C
   - 최상위 댓글만 정렬, 답글은 작성순 유지
 - 글 상세 **댓글 (n)** 헤더 + 정렬 필터 (왼쪽 정렬)
 - 리치 텍스트 (이미지·링크) — JPEG/PNG/WebP/**GIF** (최대 5MB)
+  - 이미지는 게시글 에디터와 동일하게 **드래그로 위치 이동**·리사이즈 핸들 지원
 - 에디터 하단 등록·취소 버튼
 - **외부 링크** — 게시글과 동일하게 `nofollow ugc`·Safe Browsing 검사 적용
 - 작성자 표시 이름·아바타, **좋아요 → 답글 → 신고/삭제** 액션 순
@@ -313,7 +319,7 @@ src/
 │   └── ui/                   # Modal, ThemeToggle, toast
 ├── features/
 │   ├── auth/
-│   ├── posts/                # 글, PostForm, 리치 에디터, 커버 미리보기
+│   ├── posts/                # 글, PostForm, 리치 에디터, PostDetail, 커버 미리보기
 │   ├── comments/
 │   ├── likes/
 │   ├── follows/              # 팔로우·팔로워/팔로잉 목록
@@ -330,6 +336,8 @@ src/
 ├── lib/
 │   ├── link-url-policy.ts    # 외부 링크 추출·rel·신뢰 URL 판별
 │   ├── rich-text-editor-format.ts
+│   ├── rich-text-editor-image.ts          # 에디터 이미지 선택·드래그 이동·리사이즈
+│   ├── rich-text-editor-image-overlay.tsx # 삭제·리사이즈 핸들 UI
 │   ├── umami-env.ts          # NEXT_PUBLIC Umami 설정
 │   └── sanitize-post-html-core.ts
 └── db/migrations/
@@ -690,6 +698,8 @@ Resend (이메일)
 - [x] **콘텐츠 링크 안전** — `nofollow ugc`, Google Safe Browsing 검사, 신규 계정 외부 링크 레이트리밋·시스템 자동 신고
 - [x] Docker `npm ci` lockfile 수정 (recharts·otplib 이후 NAS 빌드)
 - [x] 502 원인 수정 (`env.ts` 빈 문자열 검증 이슈)
+- [x] **글 작성 에디터 UX** — 이미지 드래그 이동(드롭 가이드), 리사이즈 핸들·스크롤바 겹침 개선, 하단 툴바 sticky 고정
+- [x] **글 상세 UI 분리** — `PostDetail` / header / actions / icons 컴포넌트 조합
 
 ### 남은 할 일 — 보안 마무리 (운영 확인)
 
